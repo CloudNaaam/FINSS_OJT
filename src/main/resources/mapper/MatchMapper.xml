@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="coms.fins.ojt.mapper.MatchMapper">
+
+    <select id="selectAllMatches" resultType="coms.fins.ojt.domain.MatchVO">
+        SELECT 
+            match_id,
+            field_name,
+            field_photo,
+            match_at,
+            created_at,
+            match_level,
+            gender,
+            num_members
+        FROM matches
+        ORDER BY match_id DESC
+    </select>
+
+</mapper>

@@ -1,6 +1,8 @@
 package coms.fins.ojt.controller;
 
+import coms.fins.ojt.mapper.FileMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,9 @@ import java.util.*;
 @RequestMapping("/api/file")
 public class FileUploadController {
 
+    @Autowired
+    private FileMapper fileMapper;
+
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> uploadFile(
             @RequestParam("file") MultipartFile file,
@@ -26,7 +31,7 @@ public class FileUploadController {
 
         if (file == null || file.isEmpty()) {
             response.put("success", false);
-            response.put("filename", null);
+            response.put("file_uuid", null);
             return ResponseEntity.badRequest().body(response);
         }
 
@@ -40,7 +45,7 @@ public class FileUploadController {
 
         if (!isAllowedContentType) {
             response.put("success", false);
-            response.put("filename", null);
+            response.put("file_uuid", null);
             return ResponseEntity.badRequest().body(response);
         }
 
@@ -55,7 +60,7 @@ public class FileUploadController {
 
         if (!isAllowedExtension) {
             response.put("success", null);
-            response.put("filename", null);
+            response.put("file_uuid", null);
             return ResponseEntity.badRequest().body(response);
         }
 
@@ -68,25 +73,31 @@ public class FileUploadController {
                 Files.createDirectories(uploadPath);
             }
 
-            // 확장자 추출 및 uuid.ext 생성
+            // 확장자 추출 및 소문자 통일 (리눅스 대소문자 404 에러 방지)
             String extension = "";
             if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
             }
             String savedFilename = UUID.randomUUID().toString() + extension;
 
             Path targetPath = uploadPath.resolve(savedFilename);
             file.transferTo(targetPath.toFile());
 
-            // 성공 응답
+            // DB files 테이블에 file_uuid 및 original_filename 저장
+            if (fileMapper != null) {
+                fileMapper.insertFile(savedFilename, originalFilename != null ? originalFilename : savedFilename);
+            }
+
+            // 성공 응답 (file_uuid 및 original_filename 반환)
             response.put("success", true);
-            response.put("filename", savedFilename);
+            response.put("file_uuid", savedFilename);
+            response.put("original_filename", originalFilename);
 
             return ResponseEntity.ok(response);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             response.put("success", false);
-            response.put("filename", null);
+            response.put("file_uuid", null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
