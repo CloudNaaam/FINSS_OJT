@@ -35,13 +35,26 @@ public class FileDownloadController {
 
         String fileUuid = (fileParam != null && !fileParam.isEmpty()) ? fileParam : filePathParam;
 
-        // Path Traversal 방지: ../ 문자열 필터링 (차단 시 400 Bad Request 반환)
-        if (fileUuid == null || fileUuid.contains("../") || fileUuid.contains("..\\") || fileUuid.contains("..")) {
+        if (fileUuid == null || fileUuid.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
+        // 1. 절대경로 검증 및 차단 (절대경로일 경우 HTTP 400 반환)
+        Path inputPath = Paths.get(fileUuid);
+        boolean isAbsolutePath = inputPath.isAbsolute()
+                || fileUuid.startsWith("/")
+                || fileUuid.startsWith("\\")
+                || fileUuid.matches("^[a-zA-Z]:[\\\\/].*");
+
+        if (isAbsolutePath) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        // 2. "../" 문자열 1회 치환 (python의 path.replace("../", "") 방식)
+        fileUuid = fileUuid.replace("../", "");
+
         try {
-            // 1. /uploads 배포 폴더 기준으로 파일 위치 탐색
+            // 3. /uploads 배포 폴더 기준으로 파일 위치 탐색
             String realUploadsPath = request.getServletContext().getRealPath("/uploads");
             Path path = Paths.get(realUploadsPath).resolve(fileUuid).normalize();
 
@@ -52,7 +65,7 @@ public class FileDownloadController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            // 2. DB에서 원본 파일명(original_filename) 조회
+            // 4. DB에서 원본 파일명(original_filename) 조회
             String downloadFilename = file.getName();
             if (fileMapper != null) {
                 FileVO fileVo = fileMapper.selectFileByUuid(fileUuid);
@@ -61,18 +74,18 @@ public class FileDownloadController {
                 }
             }
 
-            // 3. Spring Resource 객체 생성
+            // 5. Spring Resource 객체 생성
             Resource resource = new FileSystemResource(file);
 
-            // 4. 한글 파일명 브라우저 다운로드 깨짐 방지 인코딩
+            // 6. 한글 파일명 브라우저 다운로드 깨짐 방지 인코딩
             String encodedFilename = UriUtils.encode(downloadFilename, StandardCharsets.UTF_8);
 
-            // 5. 다운로드를 위한 Content-Disposition 헤더 생성
+            // 7. 다운로드를 위한 Content-Disposition 헤더 생성
             ContentDisposition contentDisposition = ContentDisposition.builder("attachment")
                     .filename(encodedFilename)
                     .build();
 
-            // 6. Content-Type 감지
+            // 8. Content-Type 감지
             String contentType = Files.probeContentType(path);
             if (contentType == null) {
                 contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
