@@ -69,3 +69,24 @@ CREATE TABLE files (
     CONSTRAINT pk_files PRIMARY KEY (file_uuid)
 );
 
+
+-- 6.  ADMIN 계정 생성
+INSERT INTO users (
+                   username,
+                   password,
+                   name,
+                   age,
+                   gender,
+                   email,
+                   is_admin,
+                   phone_number
+) VALUES (
+          'cloudnaam',
+          'cloudnaam123@',
+          '남정운',
+          28,
+          'MALE',
+          'cile0629@gmail.com',
+          1,
+          '010-9554-4872'
+);
