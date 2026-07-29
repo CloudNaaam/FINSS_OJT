@@ -12,4 +12,9 @@ public class HomeController {
         model.addAttribute("message", "hello?");
         return "index";
     }
+
+    @GetMapping("/mypage")
+    public String mypage() {
+        return "mypage";
+    }
 }

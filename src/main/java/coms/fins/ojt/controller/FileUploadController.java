@@ -65,9 +65,9 @@ public class FileUploadController {
         }
 
         try {
-            // 웹 애플리케이션 실제 배포 경로 하위의 /uploads
+            // 웹 애플리케이션 실제 배포 경로 하위의 /uploads/board
             String realPath = request.getServletContext().getRealPath("/uploads");
-            Path uploadPath = Paths.get(realPath);
+            Path uploadPath = Paths.get(realPath, "board");
 
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);

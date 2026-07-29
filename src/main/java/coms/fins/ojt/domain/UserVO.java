@@ -16,6 +16,10 @@ public class UserVO {
     private String phoneNumber;
 
     private Integer isAdmin;
+
+    @JsonProperty("profile_img")
+    private String profileImg;
+
     private Date createdAt;
 
     public UserVO() {}
@@ -100,6 +104,14 @@ public class UserVO {
 
     public void setIsAdmin(Integer isAdmin) {
         this.isAdmin = isAdmin;
+    }
+
+    public String getProfileImg() {
+        return profileImg;
+    }
+
+    public void setProfileImg(String profileImg) {
+        this.profileImg = profileImg;
     }
 
     public Date getCreatedAt() {

@@ -54,9 +54,9 @@ public class FileDownloadController {
         fileUuid = fileUuid.replace("../", "");
 
         try {
-            // 3. /uploads 배포 폴더 기준으로 파일 위치 탐색
+            // 3. /uploads/board 배포 폴더 기준으로 파일 위치 탐색
             String realUploadsPath = request.getServletContext().getRealPath("/uploads");
-            Path path = Paths.get(realUploadsPath).resolve(fileUuid).normalize();
+            Path path = Paths.get(realUploadsPath, "board").resolve(fileUuid).normalize();
 
             File file = path.toFile();
 

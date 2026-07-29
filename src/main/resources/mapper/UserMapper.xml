@@ -20,9 +20,21 @@
         WHERE username = #{username}
     </select>
 
+    <select id="selectUserById" resultType="coms.fins.ojt.domain.UserVO">
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, profile_img, created_at
+        FROM users
+        WHERE user_id = #{userId}
+    </select>
+
     <!-- Raw Query 로그인 (PreparedStatement 미사용, ${} 가공되지 않은 문자열 매핑 사용) -->
     <select id="loginRaw" resultType="int">
         SELECT COUNT(*) FROM users WHERE username = '${username}' AND password = '${password}'
     </select>
+
+    <update id="updateUserProfileImg">
+        UPDATE users
+        SET profile_img = #{profileImg, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
+    </update>
 
 </mapper>
