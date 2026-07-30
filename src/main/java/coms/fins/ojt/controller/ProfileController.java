@@ -2,6 +2,7 @@ package coms.fins.ojt.controller;
 
 import coms.fins.ojt.domain.UserVO;
 import coms.fins.ojt.mapper.UserMapper;
+import coms.fins.ojt.util.FileUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -56,6 +57,13 @@ public class ProfileController {
             return ResponseEntity.badRequest().body(response);
         }
 
+        // 3. 매직 바이트 (파일 시그니처 바이너리) 검증
+        if (!FileUtil.isValidMagicByte(file)) {
+            response.put("profile_img", null);
+            response.put("success", false);
+            return ResponseEntity.badRequest().body(response);
+        }
+
         try {
             // 업로드 폴더/profile 디렉터리 경로 설정
             String realUploadsPath = request.getServletContext().getRealPath("/uploads");
@@ -66,11 +74,7 @@ public class ProfileController {
             }
 
             // 확장자 추출 및 UUID 파일명 생성
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
-            }
-            String savedFilename = UUID.randomUUID().toString() + extension;
+            String savedFilename = FileUtil.generateSavedFilename(originalFilename);
 
             Path targetPath = profileDir.resolve(savedFilename);
             file.transferTo(targetPath.toFile());

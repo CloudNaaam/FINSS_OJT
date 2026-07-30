@@ -1,6 +1,7 @@
 package coms.fins.ojt.controller;
 
 import coms.fins.ojt.mapper.FileMapper;
+import coms.fins.ojt.util.FileUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,6 +64,13 @@ public class FileUploadController {
             return ResponseEntity.badRequest().body(response);
         }
 
+        // 3. 매직 바이트 (파일 시그니처 바이너리) 검증
+        if (!FileUtil.isValidMagicByte(file)) {
+            response.put("success", false);
+            response.put("file_uuid", null);
+            return ResponseEntity.badRequest().body(response);
+        }
+
         try {
             // 웹 애플리케이션 실제 배포 경로 하위의 /uploads/board
             String realPath = request.getServletContext().getRealPath("/uploads");
@@ -73,12 +80,8 @@ public class FileUploadController {
                 Files.createDirectories(uploadPath);
             }
 
-            // 확장자 추출 및 소문자 통일 (리눅스 대소문자 404 에러 방지)
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
-            }
-            String savedFilename = UUID.randomUUID().toString() + extension;
+            // 확장자 추출 및 소문자 통일 및 UUID 파일명 생성
+            String savedFilename = FileUtil.generateSavedFilename(originalFilename);
 
             Path targetPath = uploadPath.resolve(savedFilename);
             file.transferTo(targetPath.toFile());
