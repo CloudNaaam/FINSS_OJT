@@ -16,4 +16,8 @@
         WHERE file_uuid = #{fileUuid}
     </select>
 
+    <delete id="deleteFileByUuid">
+        DELETE FROM files WHERE file_uuid = #{fileUuid}
+    </delete>
+
 </mapper>

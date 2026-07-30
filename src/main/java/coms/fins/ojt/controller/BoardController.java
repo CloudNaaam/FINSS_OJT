@@ -3,6 +3,7 @@ package coms.fins.ojt.controller;
 import coms.fins.ojt.domain.BoardDetailResponseVO;
 import coms.fins.ojt.domain.BoardVO;
 import coms.fins.ojt.service.BoardService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -35,8 +36,6 @@ public class BoardController {
         return "board-detail";
     }
 
-
-
     @GetMapping("/api/board/all")
     @ResponseBody
     public ResponseEntity<List<BoardVO>> getAllBoards() {
@@ -64,5 +63,42 @@ public class BoardController {
         }
         return ResponseEntity.ok(detail);
     }
-}
 
+    @DeleteMapping("/api/board/delete")
+    @ResponseBody
+    public ResponseEntity<Map<String, Boolean>> deleteBoard(
+            @RequestBody Map<String, Object> requestData,
+            HttpServletRequest request) {
+
+        Map<String, Boolean> response = new HashMap<>();
+
+        if (requestData == null || !requestData.containsKey("board_id")) {
+            response.put("success", false);
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        Object idObj = requestData.get("board_id");
+        Long boardId = null;
+
+        if (idObj instanceof Number) {
+            boardId = ((Number) idObj).longValue();
+        } else if (idObj instanceof String) {
+            try {
+                boardId = Long.parseLong((String) idObj);
+            } catch (NumberFormatException e) {
+                response.put("success", false);
+                return ResponseEntity.badRequest().body(response);
+            }
+        }
+
+        if (boardId == null) {
+            response.put("success", false);
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        boolean success = boardService.deleteBoard(boardId, request);
+        response.put("success", success);
+
+        return ResponseEntity.ok(response);
+    }
+}

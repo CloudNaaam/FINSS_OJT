@@ -547,9 +547,28 @@
     }
 
     function handleDelete(boardId) {
-        if (confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
-            alert('게시글 삭제 기능 준비 중입니다.');
-        }
+        if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+
+        fetch('/api/board/delete', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ board_id: boardId })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.success) {
+                alert('게시글이 삭제되었습니다.');
+                location.href = '/board';
+            } else {
+                alert('게시글 삭제 처리에 실패했습니다.');
+            }
+        })
+        .catch(function(err) {
+            console.error('게시글 삭제 오류:', err);
+            alert('게시글 삭제 처리 중 오류가 발생했습니다.');
+        });
     }
 
     function addComment() {

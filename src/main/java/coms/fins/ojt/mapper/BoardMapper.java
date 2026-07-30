@@ -12,5 +12,5 @@ public interface BoardMapper {
     void insert(BoardVO board);
     BoardVO read(Long boardId);
     BoardDetailResponseVO selectBoardDetailById(Long boardId);
+    int deleteBoard(Long boardId);
 }
-
