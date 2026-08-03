@@ -102,9 +102,14 @@ public class MatchService {
 
         try {
             // 4. ProcessBuilder 명령어 조립 및 실행
-            String command = "ffmpeg -i \"" + rawFile.getAbsolutePath() + "\""
-                    + " -c:v libx264 -crf 26 -preset ultrafast -c:a aac -b:a 96k -y \""
-                    + compressedFile.getAbsolutePath() + "\"";
+            // 진짜 압축 명령어
+//            String command = "ffmpeg -i \"" + rawFile.getAbsolutePath() + "\""
+//                    + " -c:v libx264 -crf 26 -preset ultrafast -c:a aac -b:a 96k -y \""
+//                    + compressedFile.getAbsolutePath() + "\"";
+
+            // 가짜 압축 명령어 <-- VM 속도 이슈로 대체
+            String command = "ffmpeg -ss 00:00:00 -to 00:07:48 -i \""+ rawFile.getAbsolutePath() + "\""
+                    + "-c copy \"" + compressedFile.getAbsolutePath() + "\"";
 
             // Linux (Ubuntu) 버전 (현재 활성화)
             Process process = new ProcessBuilder("/bin/bash", "-c", command).start();
