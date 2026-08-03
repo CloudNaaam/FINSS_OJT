@@ -12,4 +12,6 @@ public interface UserMapper {
     UserVO selectUserById(@Param("userId") Long userId);
     int loginRaw(@Param("username") String username, @Param("password") String password);
     int updateUserProfileImg(@Param("userId") Long userId, @Param("profileImg") String profileImg);
+    Long findUserIdByUsernameAndEmail(@Param("username") String username, @Param("email") String email);
+    int updatePasswordByUsernameAndEmail(@Param("username") String username, @Param("email") String email, @Param("newPassword") String newPassword);
 }

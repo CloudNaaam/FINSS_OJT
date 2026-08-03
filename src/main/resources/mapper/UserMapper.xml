@@ -37,4 +37,16 @@
         WHERE user_id = #{userId}
     </update>
 
+    <select id="findUserIdByUsernameAndEmail" resultType="java.lang.Long">
+        SELECT user_id
+        FROM users
+        WHERE username = #{username} AND email = #{email}
+    </select>
+
+    <update id="updatePasswordByUsernameAndEmail">
+        UPDATE users
+        SET password = #{newPassword}
+        WHERE username = #{username} AND email = #{email}
+    </update>
+
 </mapper>

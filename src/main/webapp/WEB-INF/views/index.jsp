@@ -527,9 +527,10 @@
                 data.forEach(function(m) {
                     var timeStr = m.match_at ? m.match_at.substring(11, 16) : '19:00';
                     var genderStr = m.gender === 'ANY' ? '남녀 모두' : (m.gender === 'MALE' ? '남성' : '여성');
-                    html += '<article class="match-card">' +
+                    var photoUrl = m.field_photo || 'https://i.namu.wiki/i/lQIGadGVZtfkSOOba-BOK0J0NpytK5Ur9E3phQeFThfpxuDNKv0c0-rdFmNw5F6fOehk0-kFKCGrDFOeD51S9A.webp';
+                    html += '<article class="match-card" style="cursor: pointer;" onclick="location.href=\'/matches/' + (m.match_id || 1) + '\'">' +
                                 '<div class="time">' + timeStr + '<small>120분</small></div>' +
-                                '<div>' +
+                                '<div style="flex: 1;">' +
                                     '<h3 class="match-title">' + (m.field_name || '경기장') + '</h3>' +
                                     '<p class="match-meta">' + genderStr + ' · 레벨 ' + (m.match_level || 5) + ' · 모집 ' + (m.num_members || 12) + '명</p>' +
                                     '<div class="tags">' +
@@ -537,7 +538,8 @@
                                         '<span class="tag">풋살화</span>' +
                                     '</div>' +
                                 '</div>' +
-                                '<button class="status" type="button">신청 가능</button>' +
+                                '<img src="' + photoUrl + '" alt="경기장" style="width: 76px; height: 56px; object-fit: cover; border-radius: 8px; margin: 0 10px;">' +
+                                '<button class="status" type="button" onclick="event.stopPropagation(); location.href=\'/matches/' + (m.match_id || 1) + '\'">신청 가능</button>' +
                             '</article>';
                 });
                 container.innerHTML = html;

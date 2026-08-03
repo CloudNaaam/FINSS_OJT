@@ -7,16 +7,30 @@
 
     <select id="selectAllMatches" resultType="coms.fins.ojt.domain.MatchVO">
         SELECT 
-            match_id,
-            field_name,
-            field_photo,
-            match_at,
-            created_at,
-            match_level,
+            match_id        AS matchId,
+            field_name      AS fieldName,
+            highlight_video AS highlightVideo,
+            match_at        AS matchAt,
+            created_at      AS createdAt,
+            match_level     AS matchLevel,
             gender,
-            num_members
+            num_members     AS numMembers
         FROM matches
         ORDER BY match_id DESC
+    </select>
+
+    <select id="selectMatchById" resultType="coms.fins.ojt.domain.MatchVO">
+        SELECT 
+            match_id        AS matchId,
+            field_name      AS fieldName,
+            highlight_video AS highlightVideo,
+            match_at        AS matchAt,
+            created_at      AS createdAt,
+            match_level     AS matchLevel,
+            gender,
+            num_members     AS numMembers
+        FROM matches
+        WHERE match_id = #{matchId}
     </select>
 
 </mapper>
