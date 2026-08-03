@@ -102,21 +102,21 @@ public class MatchService {
 
         try {
             // 4. Runtime.getRuntime().exec(command) 명령어 조립 및 실행
-//            String[] command = {
-//                "/bin/bash",
-//                "-c",
-//                "ffmpeg -i \"" + rawFile.getAbsolutePath() + "\""
-//                            + " -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k -y \""
-//                            + compressedFile.getAbsolutePath() + "\""
-//            };
-
             String[] command = {
-                    "powershell.exe",
-                    "-Command",
-                    "ffmpeg -i \"" + rawFile.getAbsolutePath() + "\""
+                "/bin/bash",
+                "-c",
+                "ffmpeg -i \"" + rawFile.getAbsolutePath() + "\""
                             + " -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k -y \""
                             + compressedFile.getAbsolutePath() + "\""
             };
+
+//            String[] command = {
+//                    "powershell.exe",
+//                    "-Command",
+//                    "ffmpeg -i \"" + rawFile.getAbsolutePath() + "\""
+//                            + " -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k -y \""
+//                            + compressedFile.getAbsolutePath() + "\""
+//            };
 
 
             Process process = Runtime.getRuntime().exec(command);
