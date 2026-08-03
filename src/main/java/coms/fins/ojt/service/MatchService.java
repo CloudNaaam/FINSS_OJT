@@ -103,15 +103,15 @@ public class MatchService {
         try {
             // 4. ProcessBuilder 명령어 조립 및 실행
             String command = "ffmpeg -i \"" + rawFile.getAbsolutePath() + "\""
-                    + " -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k -y \""
+                    + " -c:v libx264 -crf 26 -preset ultrafast -c:a aac -b:a 96k -y \""
                     + compressedFile.getAbsolutePath() + "\"";
 
             // Linux (Ubuntu) 버전 (현재 활성화)
             Process process = new ProcessBuilder("/bin/bash", "-c", command).start();
 
             // Windows 버전 (cmd.exe / powershell.exe 필요시 주석 해제하여 사용)
-            // Process process = new ProcessBuilder("cmd.exe", "/c", command).start();
-            // Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
+//             Process process = new ProcessBuilder("cmd.exe", "/c", command).start();
+//             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
 
             boolean finished = process.waitFor(120, TimeUnit.SECONDS); // 최대 2분 대기
 
