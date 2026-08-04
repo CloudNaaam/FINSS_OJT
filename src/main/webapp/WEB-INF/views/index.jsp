@@ -91,6 +91,8 @@
             background: transparent;
             color: #333;
             font-size: 20px;
+            text-decoration: none;
+            transition: background 0.15s ease;
         }
 
         .icon-button:hover { background: #f4f6f8; }
@@ -431,7 +433,8 @@
             <div class="brand">Finlab</div>
             <div class="header-actions">
                 <button class="icon-button" type="button" aria-label="검색">⌕</button>
-                <a class="icon-button" href="/mypage" aria-label="마이페이지" style="text-decoration:none;">●</a>
+                <a class="icon-button" href="/gm" aria-label="구장 관리자 페이지">🏟️</a>
+                <a class="icon-button" href="/mypage" aria-label="마이페이지">👤</a>
             </div>
         </div>
         <nav class="service-nav" aria-label="서비스 메뉴">

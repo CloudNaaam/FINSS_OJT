@@ -15,13 +15,13 @@
     </select>
 
     <select id="findByUsername" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, created_at
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, created_at
         FROM users
         WHERE username = #{username}
     </select>
 
     <select id="selectUserById" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, profile_img, created_at
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at
         FROM users
         WHERE user_id = #{userId}
     </select>
@@ -34,6 +34,12 @@
     <update id="updateUserProfileImg">
         UPDATE users
         SET profile_img = #{profileImg, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateManagerStatus">
+        UPDATE users
+        SET is_manager = #{isManager}
         WHERE user_id = #{userId}
     </update>
 

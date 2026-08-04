@@ -29,6 +29,21 @@ public class HomeController {
         return "manager-myapply";
     }
 
+    @GetMapping("/gm")
+    public String stadiumManager() {
+        return "stadium-manager";
+    }
+
+    @GetMapping("/gm/add")
+    public String stadiumAdd() {
+        return "stadium-add";
+    }
+
+    @GetMapping("/gm/mod")
+    public String stadiumMod() {
+        return "stadium-mod";
+    }
+
     @GetMapping("/register")
     public String register() {
         return "register";

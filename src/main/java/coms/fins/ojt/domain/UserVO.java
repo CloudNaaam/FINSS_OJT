@@ -17,6 +17,9 @@ public class UserVO {
 
     private Integer isAdmin;
 
+    @JsonProperty("is_manager")
+    private Integer isManager;
+
     @JsonProperty("profile_img")
     private String profileImg;
 
@@ -104,6 +107,14 @@ public class UserVO {
 
     public void setIsAdmin(Integer isAdmin) {
         this.isAdmin = isAdmin;
+    }
+
+    public Integer getIsManager() {
+        return isManager;
+    }
+
+    public void setIsManager(Integer isManager) {
+        this.isManager = isManager;
     }
 
     public String getProfileImg() {

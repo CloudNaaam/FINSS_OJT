@@ -51,6 +51,21 @@ public class UserService {
         }
     }
 
+    public UserVO getUserById(Long userId) {
+        if (userId == null || userMapper == null) {
+            return null;
+        }
+        return userMapper.selectUserById(userId);
+    }
+
+    @Transactional
+    public boolean grantManagerRole(Long userId) {
+        if (userId == null || userMapper == null) {
+            return false;
+        }
+        return userMapper.updateManagerStatus(userId, 1) > 0;
+    }
+
     public UserVO loginUser(String username, String password) {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
             return null;
