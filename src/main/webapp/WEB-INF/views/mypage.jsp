@@ -416,9 +416,25 @@
         <!-- 계정 설정 메뉴 -->
         <h2 class="section-title">계정 및 서비스 설정</h2>
         <ul class="menu-list">
-            <li class="menu-item"><a href="#" onclick="alert('내 정보 수정 준비 중입니다.')"><span>👤 내 정보 수정</span><span>›</span></a></li>
-            <li class="menu-item"><a href="#" onclick="alert('비밀번호 변경 준비 중입니다.')"><span>🔒 비밀번호 변경</span><span>›</span></a></li>
-            <li class="menu-item"><a href="#" onclick="alert('알림 설정 준비 중입니다.')"><span>🔔 알림 설정</span><span>›</span></a></li>
+            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>👤 내 정보 수정</span><span>›</span></a></li>
+            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>🔒 비밀번호 변경</span><span>›</span></a></li>
+            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>🔔 알림 설정</span><span>›</span></a></li>
+        </ul>
+
+        <!-- 핀랩풋볼 카테고리 -->
+        <h2 class="section-title">핀랩풋볼</h2>
+        <ul class="menu-list">
+            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>⚽ 핀랩풋볼 소개</span><span>›</span></a></li>
+            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>📖 매거진</span><span>›</span></a></li>
+            <li class="menu-item"><a href="/mypage/apply"><span>🏃 매니저지원</span><span>›</span></a></li>
+            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>🏟️ 구장 제휴</span><span>›</span></a></li>
+            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>💼 채용</span><span>›</span></a></li>
+        </ul>
+
+        <!-- 약관 및 정책 -->
+        <ul class="menu-list">
+            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>📄 이용약관</span><span>›</span></a></li>
+            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>🛡️ 개인정보 처리방침</span><span>›</span></a></li>
         </ul>
 
         <button type="button" class="btn-logout" onclick="handleLogout()">로그아웃</button>
@@ -491,12 +507,61 @@
         });
     }
 
+    function fetchMyProfile() {
+        fetch('/api/profile/me')
+            .then(function(res) {
+                if (!res.ok) {
+                    location.href = '/login';
+                    return null;
+                }
+                return res.json();
+            })
+            .then(function(data) {
+                if (!data) return;
+
+                document.getElementById('userName').textContent = data.name || "사용자";
+                document.getElementById('userUsername').textContent = "@" + (data.username || "user");
+                document.getElementById('userRole').textContent = data.isAdmin === 1 ? "관리자 계정" : "일반 회원";
+
+                document.getElementById('infoName').textContent = data.name || "-";
+                document.getElementById('infoUsername').textContent = data.username || "-";
+                document.getElementById('infoEmail').textContent = data.email || "-";
+                document.getElementById('infoPhone').textContent = data.phoneNumber || "-";
+
+                var genderStr = data.gender === "MALE" ? "남성" : (data.gender === "FEMALE" ? "여성" : "미지정");
+                var ageStr = data.age ? data.age + "세" : "-";
+                document.getElementById('infoGenderAge').textContent = genderStr + " · " + ageStr;
+
+                var avatarDisplay = document.getElementById('avatarDisplay');
+                if (data.profileImg && data.profileImg.trim() !== '') {
+                    var imgPath = data.profileImg.startsWith('/') ? data.profileImg : '/uploads/profile/' + data.profileImg;
+                    avatarDisplay.innerHTML = '<img src="' + imgPath + '?t=' + new Date().getTime() + '" alt="프로필 사진">';
+                } else {
+                    avatarDisplay.innerHTML = '👤';
+                }
+            })
+            .catch(function(err) {
+                console.error('프로필 정보를 불러오는데 실패했습니다:', err);
+                location.href = '/login';
+            });
+    }
+
     function handleLogout() {
         if (confirm('로그아웃 하시겠습니까?')) {
-            alert('로그아웃 되었습니다.');
-            location.href = '/';
+            fetch('/api/auth/logout', { method: 'POST' })
+                .then(function() {
+                    document.cookie = "user_id=; path=/; max-age=0;";
+                    alert('로그아웃 되었습니다.');
+                    location.href = '/login';
+                })
+                .catch(function() {
+                    document.cookie = "user_id=; path=/; max-age=0;";
+                    location.href = '/login';
+                });
         }
     }
+
+    document.addEventListener("DOMContentLoaded", fetchMyProfile);
 </script>
 </body>
 </html>

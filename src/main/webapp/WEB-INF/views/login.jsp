@@ -292,7 +292,31 @@
             return;
         }
 
-        alert("로그인 입력 양식이 올바르게 제출되었습니다. (로그인 API 연결 예정)");
+        fetch("/api/auth/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: userVal,
+                password: passVal
+            })
+        })
+        .then(function (res) {
+            if (!res.ok) throw new Error("로그인 처리 중 오류가 발생했습니다.");
+            return res.json();
+        })
+        .then(function (data) {
+            if (data && data.success) {
+                location.href = "/mypage";
+            } else {
+                errorMessage.classList.add("show");
+            }
+        })
+        .catch(function (err) {
+            console.error("로그인 오류:", err);
+            errorMessage.classList.add("show");
+        });
     });
 </script>
 </body>

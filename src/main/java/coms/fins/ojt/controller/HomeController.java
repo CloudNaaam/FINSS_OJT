@@ -19,6 +19,16 @@ public class HomeController {
         return "mypage";
     }
 
+    @GetMapping("/mypage/apply")
+    public String mypageApply() {
+        return "manager-apply";
+    }
+
+    @GetMapping("/mypage/apply/myapply")
+    public String mypageMyApply() {
+        return "manager-myapply";
+    }
+
     @GetMapping("/register")
     public String register() {
         return "register";

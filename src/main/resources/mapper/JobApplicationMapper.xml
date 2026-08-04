@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="coms.fins.ojt.mapper.JobApplicationMapper">
+
+    <insert id="insertJobApplication" parameterType="coms.fins.ojt.domain.JobApplicationVO">
+        INSERT INTO job_applications (
+            applicant_name, birth_date, phone_number, email,
+            activity_region, futsal_experience, motivation, cv_path
+        )
+        VALUES (
+            #{applicantName}, #{birthDate}, #{phoneNumber}, #{email},
+            #{activityRegion}, #{futsalExperience}, #{motivation}, #{cvPath}
+        )
+    </insert>
+
+    <update id="updateJobApplication" parameterType="coms.fins.ojt.domain.JobApplicationVO">
+        UPDATE job_applications
+        SET applicant_name    = #{applicantName},
+            birth_date        = #{birthDate},
+            phone_number      = #{phoneNumber},
+            email             = #{email},
+            activity_region   = #{activityRegion},
+            futsal_experience = #{futsalExperience},
+            motivation        = #{motivation},
+            cv_path          = #{cvPath}
+        WHERE application_id  = #{applicationId}
+    </update>
+
+    <select id="selectAllApplications" resultType="coms.fins.ojt.domain.JobApplicationVO">
+        SELECT
+            application_id AS applicationId,
+            applicant_name AS applicantName,
+            birth_date AS birthDate,
+            phone_number AS phoneNumber,
+            email,
+            activity_region AS activityRegion,
+            futsal_experience AS futsalExperience,
+            motivation,
+            cv_path AS cvPath,
+            created_at AS createdAt
+        FROM job_applications
+        ORDER BY application_id DESC
+    </select>
+
+    <select id="selectApplicationById" resultType="coms.fins.ojt.domain.JobApplicationVO">
+        SELECT
+            application_id AS applicationId,
+            applicant_name AS applicantName,
+            birth_date AS birthDate,
+            phone_number AS phoneNumber,
+            email,
+            activity_region AS activityRegion,
+            futsal_experience AS futsalExperience,
+            motivation,
+            cv_path AS cvPath,
+            created_at AS createdAt
+        FROM job_applications
+        WHERE application_id = #{applicationId}
+    </select>
+
+    <select id="selectLatestByEmailOrPhone" resultType="coms.fins.ojt.domain.JobApplicationVO">
+        SELECT * FROM (
+            SELECT
+                application_id AS applicationId,
+                applicant_name AS applicantName,
+                birth_date AS birthDate,
+                phone_number AS phoneNumber,
+                email,
+                activity_region AS activityRegion,
+                futsal_experience AS futsalExperience,
+                motivation,
+                cv_path AS cvPath,
+                created_at AS createdAt
+            FROM job_applications
+            WHERE (email IS NOT NULL AND email = #{email})
+               OR (phone_number IS NOT NULL AND phone_number = #{phone})
+            ORDER BY application_id DESC
+        ) WHERE ROWNUM = 1
+    </select>
+
+</mapper>

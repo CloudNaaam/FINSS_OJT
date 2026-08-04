@@ -51,21 +51,24 @@ public class UserService {
         }
     }
 
-    public boolean loginUser(String username, String password) {
+    public UserVO loginUser(String username, String password) {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            return false;
+            return null;
         }
 
         if (userMapper == null) {
-            return false;
+            return null;
         }
 
         try {
             int count = userMapper.loginRaw(username, password);
-            return count > 0;
+            if (count > 0) {
+                return userMapper.findByUsername(username.trim());
+            }
+            return null;
         } catch (Exception e) {
             logger.error("로그인 처리 중 오류 발생:", e);
-            return false;
+            return null;
         }
     }
 

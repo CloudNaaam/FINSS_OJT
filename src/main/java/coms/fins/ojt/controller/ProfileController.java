@@ -22,12 +22,51 @@ public class ProfileController {
     @Autowired
     private UserMapper userMapper;
 
+    @GetMapping("/me")
+    public ResponseEntity<UserVO> getMyProfile(
+            @CookieValue(value = "user_id", required = false) String userIdParam) {
+
+        if (userIdParam == null || userIdParam.trim().isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        try {
+            Long userId = Long.parseLong(userIdParam.trim());
+            UserVO user = userMapper.selectUserById(userId);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // 보안을 위해 비밀번호 제거
+            user.setPassword(null);
+            return ResponseEntity.ok(user);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PostMapping("/imgup")
     public ResponseEntity<Map<String, Object>> uploadProfileImg(
             @RequestParam("profile_img") MultipartFile file,
+            @CookieValue(value = "user_id", required = false) String userIdParam,
             HttpServletRequest request) {
 
         Map<String, Object> response = new LinkedHashMap<>();
+
+        if (userIdParam == null || userIdParam.trim().isEmpty()) {
+            response.put("profile_img", null);
+            response.put("success", false);
+            return ResponseEntity.status(401).body(response);
+        }
+
+        Long userId;
+        try {
+            userId = Long.parseLong(userIdParam.trim());
+        } catch (NumberFormatException e) {
+            response.put("profile_img", null);
+            response.put("success", false);
+            return ResponseEntity.badRequest().body(response);
+        }
 
         if (file == null || file.isEmpty()) {
             response.put("profile_img", null);
@@ -82,10 +121,9 @@ public class ProfileController {
             // upload부터 시작하는 경로 생성
             String profileImgPath = "/uploads/profile/" + savedFilename;
 
-            // userid = 1 고정으로 users 테이블 profile_img 컬럼 업데이트
-            Long fixedUserId = 1L;
+            // users 테이블 profile_img 컬럼 업데이트
             if (userMapper != null) {
-                userMapper.updateUserProfileImg(fixedUserId, savedFilename);
+                userMapper.updateUserProfileImg(userId, savedFilename);
             }
 
             response.put("profile_img", profileImgPath);
@@ -101,13 +139,28 @@ public class ProfileController {
     }
 
     @DeleteMapping("/imagedel")
-    public ResponseEntity<Map<String, Boolean>> deleteProfileImg(HttpServletRequest request) {
+    public ResponseEntity<Map<String, Boolean>> deleteProfileImg(
+            @CookieValue(value = "user_id", required = false) String userIdParam,
+            HttpServletRequest request) {
+
         Map<String, Boolean> response = new HashMap<>();
-        Long fixedUserId = 1L;
+
+        if (userIdParam == null || userIdParam.trim().isEmpty()) {
+            response.put("success", false);
+            return ResponseEntity.status(401).body(response);
+        }
+
+        Long userId;
+        try {
+            userId = Long.parseLong(userIdParam.trim());
+        } catch (NumberFormatException e) {
+            response.put("success", false);
+            return ResponseEntity.badRequest().body(response);
+        }
 
         try {
             if (userMapper != null) {
-                UserVO user = userMapper.selectUserById(fixedUserId);
+                UserVO user = userMapper.selectUserById(userId);
                 if (user != null && user.getProfileImg() != null && !user.getProfileImg().trim().isEmpty()) {
                     String savedFilename = user.getProfileImg();
 
@@ -118,7 +171,7 @@ public class ProfileController {
                     Files.deleteIfExists(filePath);
 
                     // users 테이블 profile_img 컬럼 값 NULL 초기화
-                    userMapper.updateUserProfileImg(fixedUserId, null);
+                    userMapper.updateUserProfileImg(userId, null);
 
                     response.put("success", true);
                     return ResponseEntity.ok(response);

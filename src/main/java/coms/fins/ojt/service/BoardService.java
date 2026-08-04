@@ -48,16 +48,18 @@ public class BoardService {
             return false;
         }
 
+        if (board.getWriterId() == null) {
+            board.setWriterId(1L);
+        }
+
         if (boardMapper == null) {
             logger.error("BoardMapper 가 빈으로 등록되지 않았습니다.");
             return false;
         }
 
         try {
-            // 작성자 ID를 1L로 고정 설정
-            board.setWriterId(1L);
             boardMapper.insert(board);
-            logger.info("게시글 성공적으로 작성 완료: title={}", board.getTitle());
+            logger.info("게시글 성공적으로 작성 완료: title={}, writerId={}", board.getTitle(), board.getWriterId());
             return true;
         } catch (Exception e) {
             logger.error("게시글 작성 실패 원인 예외 발생: ", e);
@@ -66,7 +68,7 @@ public class BoardService {
     }
 
     @Transactional
-    public boolean deleteBoard(Long boardId, HttpServletRequest request) {
+    public boolean deleteBoard(Long boardId, Long requestUserId, HttpServletRequest request) {
         if (boardMapper == null || boardId == null) {
             return false;
         }
@@ -75,6 +77,12 @@ public class BoardService {
             BoardVO board = boardMapper.read(boardId);
             if (board == null) {
                 logger.warn("삭제 대상 게시글을 찾을 수 없습니다: boardId={}", boardId);
+                return false;
+            }
+
+            // 작성자 본인 확인 (본인 글만 삭제 허용)
+            if (requestUserId != null && !requestUserId.equals(board.getWriterId())) {
+                logger.warn("게시글 삭제 권한이 없습니다. (작성자 불일치) boardWriterId={}, requestUserId={}", board.getWriterId(), requestUserId);
                 return false;
             }
 

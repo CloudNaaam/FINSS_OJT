@@ -11,10 +11,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
+
 @Configuration
 @EnableWebMvc
+@PropertySource("classpath:application.properties")
 @ComponentScan(basePackages = "coms.fins.ojt")
 public class WebConfig implements WebMvcConfigurer {
+
+    @Value("${admin.base.path:C:/Users/FINS/uploads}")
+    private String adminBasePath;
 
     @Bean
     public InternalResourceViewResolver viewResolver() {
@@ -30,11 +37,27 @@ public class WebConfig implements WebMvcConfigurer {
         return new StandardServletMultipartResolver();
     }
 
+    public String getAdminBasePath() {
+        if (adminBasePath != null && !adminBasePath.isBlank()) {
+            return adminBasePath.trim();
+        }
+        return "C:/Users/FINS/uploads";
+    }
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/resources/**")
                 .addResourceLocations("/resources/");
+
+        String basePath = getAdminBasePath();
+        String fileLocation = basePath.endsWith("/") ? "file:///" + basePath : "file:///" + basePath + "/";
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("/uploads/");
+                .addResourceLocations(fileLocation, "/uploads/");
+    }
+
+    @Override
+    public void addInterceptors(org.springframework.web.servlet.config.annotation.InterceptorRegistry registry) {
+        registry.addInterceptor(new AuthCookieInterceptor())
+                .addPathPatterns("/mypage", "/mypage/**", "/board/write");
     }
 }

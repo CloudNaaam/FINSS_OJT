@@ -45,13 +45,27 @@ public class BoardController {
 
     @PostMapping("/api/board/write")
     @ResponseBody
-    public ResponseEntity<Map<String, Boolean>> writeBoard(@RequestBody BoardVO board) {
+    public ResponseEntity<Map<String, Boolean>> writeBoard(
+            @RequestBody BoardVO board,
+            @CookieValue(value = "user_id", required = false) String userIdCookie) {
+
         Map<String, Boolean> response = new HashMap<>();
 
-        boolean success = boardService.createBoard(board);
+        if (userIdCookie == null || userIdCookie.trim().isEmpty()) {
+            response.put("success", false);
+            return ResponseEntity.status(401).body(response);
+        }
 
-        response.put("success", success);
-        return ResponseEntity.ok(response);
+        try {
+            Long userId = Long.parseLong(userIdCookie.trim());
+            board.setWriterId(userId);
+            boolean success = boardService.createBoard(board);
+            response.put("success", success);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 
     @GetMapping("/api/board/{id}")
@@ -68,9 +82,23 @@ public class BoardController {
     @ResponseBody
     public ResponseEntity<Map<String, Boolean>> deleteBoard(
             @RequestBody Map<String, Object> requestData,
+            @CookieValue(value = "user_id", required = false) String userIdCookie,
             HttpServletRequest request) {
 
         Map<String, Boolean> response = new HashMap<>();
+
+        if (userIdCookie == null || userIdCookie.trim().isEmpty()) {
+            response.put("success", false);
+            return ResponseEntity.status(401).body(response);
+        }
+
+        Long userId;
+        try {
+            userId = Long.parseLong(userIdCookie.trim());
+        } catch (Exception e) {
+            response.put("success", false);
+            return ResponseEntity.badRequest().body(response);
+        }
 
         if (requestData == null || !requestData.containsKey("board_id")) {
             response.put("success", false);
@@ -96,7 +124,7 @@ public class BoardController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        boolean success = boardService.deleteBoard(boardId, request);
+        boolean success = boardService.deleteBoard(boardId, userId, request);
         response.put("success", success);
 
         return ResponseEntity.ok(response);
