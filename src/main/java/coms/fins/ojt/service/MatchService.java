@@ -37,7 +37,7 @@ public class MatchService {
         return matchMapper.selectMatchesWithFilter(isEnd, isGender, level, date, evening);
     }
 
-    public MatchVO getMatchById(Long matchId) {
+    public MatchVO getMatchById(Object matchId) {
         if (matchMapper == null || matchId == null) {
             return null;
         }
@@ -49,7 +49,7 @@ public class MatchService {
         }
     }
 
-    public File compressAndGetHighlightVideo(Long matchId, String outputName) throws Exception {
+    public File compressAndGetHighlightVideo(Object matchId, String outputName) throws Exception {
         MatchVO match = getMatchById(matchId);
         if (match == null) {
             throw new IllegalArgumentException("해당 ID(" + matchId + ")의 매치 정보를 찾을 수 없습니다.");

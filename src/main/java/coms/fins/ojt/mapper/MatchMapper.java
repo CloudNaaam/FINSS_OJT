@@ -16,5 +16,5 @@ public interface MatchMapper {
             @Param("date") String date,
             @Param("evening") String evening
     );
-    MatchVO selectMatchById(@Param("matchId") Long matchId);
+    MatchVO selectMatchById(@Param("matchId") Object matchId);
 }

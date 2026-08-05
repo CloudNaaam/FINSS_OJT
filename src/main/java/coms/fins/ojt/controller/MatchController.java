@@ -40,7 +40,7 @@ public class MatchController {
     }
 
     @GetMapping("/{matchId}")
-    public ResponseEntity<MatchVO> getMatchById(@PathVariable("matchId") Long matchId) {
+    public ResponseEntity<MatchVO> getMatchById(@PathVariable("matchId") String matchId) {
         MatchVO match = matchService.getMatchById(matchId);
         if (match != null) {
             return ResponseEntity.ok(match);
@@ -51,7 +51,7 @@ public class MatchController {
 
     @GetMapping("/{matchId}/highlight_download")
     public ResponseEntity<?> downloadHighlight(
-            @PathVariable("matchId") Long matchId,
+            @PathVariable("matchId") String matchId,
             @RequestParam(value = "output_name", required = false) String outputName) {
 
         try {
