@@ -75,7 +75,10 @@ public class MatchController {
             org.slf4j.LoggerFactory.getLogger(MatchController.class).error("영상 하이라이트 다운로드 예외 발생: ", e);
             java.util.Map<String, Object> errResp = new java.util.HashMap<>();
             errResp.put("success", false);
-            errResp.put("error", e.getMessage());
+            String rawErrorMsg = (e.getMessage() != null && !e.getMessage().isBlank())
+                    ? e.getMessage()
+                    : (e.getCause() != null ? e.getCause().getMessage() : "Unknown Error");
+            errResp.put("error", rawErrorMsg);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(errResp);

@@ -45,7 +45,7 @@ public class MatchService {
             return matchMapper.selectMatchById(matchId);
         } catch (Exception e) {
             logger.error("DB 매치 단건 조회 중 예외 발생: matchId={}", matchId, e);
-            throw new RuntimeException("DB 조회 실패: " + e.getMessage(), e);
+            throw e;
         }
     }
 
