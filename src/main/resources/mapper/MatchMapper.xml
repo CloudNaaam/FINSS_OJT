@@ -36,13 +36,13 @@
                 AND match_at >= SYSDATE
             </if>
             <if test="isGender != null and isGender != ''">
-                AND gender = #{isGender}
+                AND gender = '${isGender}'
             </if>
             <if test="level != null">
-                AND match_level = #{level}
+                AND match_level = ${level}
             </if>
             <if test="date != null and date != ''">
-                AND TRUNC(match_at) = TO_DATE(#{date}, 'YYYY-MM-DD')
+                AND TRUNC(match_at) = TO_DATE('${date}', 'YYYY-MM-DD')
             </if>
             <if test="evening != null and (evening == 'true' or evening == '1')">
                 AND EXTRACT(HOUR FROM match_at) BETWEEN 18 AND 23
@@ -76,7 +76,7 @@
             g.notice
         FROM matches m
         LEFT JOIN ground g ON m.field_name = g.name
-        WHERE m.match_id = #{matchId}
+        WHERE m.match_id = ${matchId}
     </select>
 
 </mapper>

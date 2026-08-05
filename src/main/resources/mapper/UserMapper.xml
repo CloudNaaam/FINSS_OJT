@@ -11,17 +11,17 @@
     </insert>
 
     <select id="checkUsernameExists" resultType="int">
-        SELECT COUNT(*) FROM users WHERE username = #{username}
+        SELECT COUNT(*) FROM users WHERE username = '${username}'
     </select>
 
     <select id="findUsernameByUsername" resultType="string">
-        SELECT username FROM users WHERE username = #{username}
+        SELECT username FROM users WHERE username = '${username}'
     </select>
 
     <select id="findByUsername" resultType="coms.fins.ojt.domain.UserVO">
         SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, created_at
         FROM users
-        WHERE username = #{username}
+        WHERE username = '${username}'
     </select>
 
     <select id="selectUserById" resultType="coms.fins.ojt.domain.UserVO">
