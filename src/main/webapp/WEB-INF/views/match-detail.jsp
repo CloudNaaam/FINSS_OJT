@@ -487,10 +487,6 @@
                     downloadFileName.value = data.field_name.trim().replaceAll(/\s+/g, "_") + "_하이라이트";
                 }
 
-                if (data.field_photo) {
-                    fieldPhoto.src = data.field_photo;
-                }
-
                 if (data.match_at) {
                     matchTime.textContent = "📅 " + data.match_at;
                 } else {

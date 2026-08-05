@@ -1,22 +1,19 @@
 package coms.fins.ojt.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MatchVO {
-
-    private static final String DEFAULT_FIELD_PHOTO_URL = "https://i.namu.wiki/i/lQIGadGVZtfkSOOba-BOK0J0NpytK5Ur9E3phQeFThfpxuDNKv0c0-rdFmNw5F6fOehk0-kFKCGrDFOeD51S9A.webp";
 
     @JsonProperty("match_id")
     private Long matchId;
 
     @JsonProperty("field_name")
     private String fieldName;
-
-    @JsonProperty("field_photo")
-    private String fieldPhoto = DEFAULT_FIELD_PHOTO_URL;
 
     @JsonProperty("highlight_video")
     private String highlightVideo;
@@ -92,14 +89,6 @@ public class MatchVO {
 
     public void setFieldName(String fieldName) {
         this.fieldName = fieldName;
-    }
-
-    public String getFieldPhoto() {
-        return (fieldPhoto != null && !fieldPhoto.isBlank()) ? fieldPhoto : DEFAULT_FIELD_PHOTO_URL;
-    }
-
-    public void setFieldPhoto(String fieldPhoto) {
-        this.fieldPhoto = fieldPhoto;
     }
 
     public String getHighlightVideo() {
