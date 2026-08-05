@@ -349,11 +349,8 @@
             <!-- 6. 이메일 (email) -->
             <div class="field">
                 <label class="field-label" for="email">이메일 <span class="required">*</span></label>
-                <div class="input-row">
-                    <input class="input" id="email" name="email" type="email"
-                           placeholder="example@email.com" autocomplete="email" required>
-                    <button class="side-button" id="btnCheckEmail" type="button">중복 확인</button>
-                </div>
+                <input class="input" id="email" name="email" type="email"
+                       placeholder="example@email.com" autocomplete="email" required>
                 <p class="help" id="emailHelp">이메일 주소를 입력해 주세요.</p>
             </div>
 
@@ -370,7 +367,7 @@
                 <div class="address-group">
                     <div class="input-row">
                         <input class="input" id="addressRoad" name="address_road" type="text"
-                               placeholder="도로명 주소" readonly required>
+                               placeholder="도로명 주소" required>
                         <button class="side-button" id="btnSearchAddress" type="button">도로명 찾기</button>
                     </div>
                     <input class="input" id="addressDetail" name="address_detail" type="text"
@@ -394,71 +391,8 @@
     const passwordHelp = document.getElementById("passwordHelp");
     const passwordConfirm = document.getElementById("passwordConfirm");
     const confirmHelp = document.getElementById("confirmHelp");
-
-    // 중복 체크 및 도로명 찾기 임시 버튼 이벤트 연동
-    document.getElementById("btnCheckUsername").addEventListener("click", function () {
-        const val = username.value.trim();
-        if (!val) {
-            usernameHelp.textContent = "아이디를 입력해 주세요.";
-            usernameHelp.className = "help error";
-            username.focus();
-            return;
-        }
-        alert("[아이디 중복 확인] API 연결 예정입니다.");
-        usernameHelp.textContent = "사용 가능한 아이디입니다. (임시)";
-        usernameHelp.className = "help success";
-    });
-
-    document.getElementById("btnCheckEmail").addEventListener("click", function () {
-        const val = email.value.trim();
-        if (!val || !email.validity.valid) {
-            emailHelp.textContent = "올바른 이메일 형식을 입력해 주세요.";
-            emailHelp.className = "help error";
-            email.focus();
-            return;
-        }
-        alert("[이메일 중복 확인] API 연결 예정입니다.");
-        emailHelp.textContent = "사용 가능한 이메일입니다. (임시)";
-        emailHelp.className = "help success";
-    });
-
-    document.getElementById("btnSearchAddress").addEventListener("click", function () {
-        alert("[도로명 찾기] 주소 검색 API 연결 예정입니다.");
-        document.getElementById("addressRoad").value = "서울시 강남구 테헤란로 123";
-    });
-
-    // 비밀번호 규칙 검증: 8자 이상, 영문 + 숫자 + 특수문자 조합
-    const passwordRule = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
-
-    function validatePasswordFormat() {
-        const val = password.value;
-        if (!val) {
-            passwordHelp.textContent = "8자 이상, 영문, 숫자, 특수문자(@$!%*#?&)를 조합하여 입력해 주세요.";
-            passwordHelp.className = "help";
-            return false;
-        }
-        if (!passwordRule.test(val)) {
-            passwordHelp.textContent = "비밀번호는 8자 이상이며 영문, 숫자, 특수문자(@$!%*#?&)가 모두 포함되어야 합니다.";
-            passwordHelp.className = "help error";
-            return false;
-        }
-        passwordHelp.textContent = "올바른 비밀번호 형식입니다.";
-        passwordHelp.className = "help success";
-        return true;
-    }
-
-    function checkPasswordConfirm() {
-        if (!passwordConfirm.value) {
-            confirmHelp.textContent = "";
-            return false;
-        }
-        const matched = password.value === passwordConfirm.value;
-        confirmHelp.textContent = matched ? "비밀번호가 일치합니다." : "비밀번호가 일치하지 않습니다.";
-        confirmHelp.className = matched ? "help success" : "help error";
-        return matched;
-    }
-
     const btnCheckUsername = document.getElementById("btnCheckUsername");
+
     let isUsernameChecked = false;
 
     // 아이디 중복 확인 연동 (/api/auth/dup POST)
@@ -501,6 +435,44 @@
         });
     });
 
+    document.getElementById("btnSearchAddress").addEventListener("click", function () {
+        const addr = prompt("도로명 주소를 입력해 주세요:", "서울시 강남구 테헤란로 123");
+        if (addr) {
+            document.getElementById("addressRoad").value = addr.trim();
+        }
+    });
+
+    // 비밀번호 규칙 검증: 8자 이상, 영문 + 숫자 + 특수문자 조합
+    const passwordRule = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+
+    function validatePasswordFormat() {
+        const val = password.value;
+        if (!val) {
+            passwordHelp.textContent = "8자 이상, 영문, 숫자, 특수문자(@$!%*#?&)를 조합하여 입력해 주세요.";
+            passwordHelp.className = "help";
+            return false;
+        }
+        if (!passwordRule.test(val)) {
+            passwordHelp.textContent = "비밀번호는 8자 이상이며 영문, 숫자, 특수문자(@$!%*#?&)가 모두 포함되어야 합니다.";
+            passwordHelp.className = "help error";
+            return false;
+        }
+        passwordHelp.textContent = "올바른 비밀번호 형식입니다.";
+        passwordHelp.className = "help success";
+        return true;
+    }
+
+    function checkPasswordConfirm() {
+        if (!passwordConfirm.value) {
+            confirmHelp.textContent = "";
+            return false;
+        }
+        const matched = password.value === passwordConfirm.value;
+        confirmHelp.textContent = matched ? "비밀번호가 일치합니다." : "비밀번호가 일치하지 않습니다.";
+        confirmHelp.className = matched ? "help success" : "help error";
+        return matched;
+    }
+
     username.addEventListener("input", function() {
         isUsernameChecked = false;
         usernameHelp.textContent = "로그인에 사용할 아이디를 입력해 주세요.";
@@ -525,7 +497,7 @@
         });
     });
 
-    // 폼 제출 이벤트
+    // 폼 제출 (회원가입 API 연동)
     form.addEventListener("submit", function (event) {
         event.preventDefault();
 
@@ -582,12 +554,57 @@
 
         const roadVal = document.getElementById("addressRoad").value.trim();
         if (!roadVal) {
-            alert("도로명 주소를 선택/입력해 주세요.");
-            document.getElementById("btnSearchAddress").focus();
+            alert("도로명 주소를 입력해 주세요.");
+            document.getElementById("addressRoad").focus();
             return;
         }
 
-        alert("회원가입 입력 양식이 올바르게 검증되었습니다. (회원가입 API 연결 예정)");
+        const genderVal = document.querySelector('input[name="gender"]:checked')
+            ? document.querySelector('input[name="gender"]:checked').value
+            : 'MALE';
+        const detailVal = document.getElementById("addressDetail").value.trim();
+        const fullAddress = detailVal ? (roadVal + " " + detailVal) : roadVal;
+
+        const payload = {
+            username: username.value.trim(),
+            password: password.value,
+            name: nameVal,
+            age: parseInt(ageVal, 10),
+            gender: genderVal,
+            email: email.value.trim(),
+            phone_number: phoneVal,
+            address: fullAddress
+        };
+
+        const submitBtn = document.getElementById("submitBtn");
+        submitBtn.disabled = true;
+        submitBtn.textContent = "회원가입 처리 중...";
+
+        fetch("/api/auth/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "가입하기";
+
+            if (data.message === "success") {
+                alert("🎉 회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
+                window.location.href = "/login";
+            } else {
+                alert("❌ 회원가입 처리에 실패했습니다. 입력 정보를 다시 확인해 주세요.");
+            }
+        })
+        .catch(function(err) {
+            console.error("회원가입 API 오류:", err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = "가입하기";
+            alert("회원가입 처리 중 오류가 발생했습니다.");
+        });
     });
 </script>
 </body>
