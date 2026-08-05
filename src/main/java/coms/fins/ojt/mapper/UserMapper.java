@@ -15,5 +15,6 @@ public interface UserMapper {
     int updateUserProfileImg(@Param("userId") Long userId, @Param("profileImg") String profileImg);
     int updateManagerStatus(@Param("userId") Long userId, @Param("isManager") int isManager);
     Long findUserIdByUsernameAndEmail(@Param("username") String username, @Param("email") String email);
+    String findUsernameByEmail(@Param("email") String email);
     int updatePasswordByUsernameAndEmail(@Param("username") String username, @Param("email") String email, @Param("newPassword") String newPassword);
 }

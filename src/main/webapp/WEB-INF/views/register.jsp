@@ -346,12 +346,25 @@
                 </div>
             </div>
 
-            <!-- 6. 이메일 (email) -->
+            <!-- 6. 이메일 (email) & 이메일 인증 -->
             <div class="field">
                 <label class="field-label" for="email">이메일 <span class="required">*</span></label>
-                <input class="input" id="email" name="email" type="email"
-                       placeholder="example@email.com" autocomplete="email" required>
-                <p class="help" id="emailHelp">이메일 주소를 입력해 주세요.</p>
+                <div class="input-row">
+                    <input class="input" id="email" name="email" type="email"
+                           placeholder="example@email.com" autocomplete="email" required>
+                    <button class="side-button" id="btnSendEmailCode" type="button">코드 전송</button>
+                </div>
+                <p class="help" id="emailHelp">이메일 주소 입력 후 코드 전송을 눌러주세요.</p>
+            </div>
+
+            <!-- 이메일 인증 코드 입력 (코드 전송 클릭 시 노출) -->
+            <div class="field" id="emailCodeGroup" style="display: none;">
+                <label class="field-label" for="emailCode">인증 코드 <span class="required">*</span></label>
+                <div class="input-row">
+                    <input class="input" id="emailCode" type="text" placeholder="6자리 인증 코드 입력" maxlength="6">
+                    <button class="side-button" id="btnVerifyEmailCode" type="button">코드 확인</button>
+                </div>
+                <p class="help" id="emailCodeHelp">이메일로 발송된 6자리 인증 코드를 입력해 주세요.</p>
             </div>
 
             <!-- 7. 전화번호 (phone_number) -->
@@ -392,8 +405,14 @@
     const passwordConfirm = document.getElementById("passwordConfirm");
     const confirmHelp = document.getElementById("confirmHelp");
     const btnCheckUsername = document.getElementById("btnCheckUsername");
+    const btnSendEmailCode = document.getElementById("btnSendEmailCode");
+    const btnVerifyEmailCode = document.getElementById("btnVerifyEmailCode");
+    const emailCodeGroup = document.getElementById("emailCodeGroup");
+    const emailCode = document.getElementById("emailCode");
+    const emailCodeHelp = document.getElementById("emailCodeHelp");
 
     let isUsernameChecked = false;
+    let isEmailVerified = false;
 
     // 아이디 중복 확인 연동 (/api/auth/dup POST)
     btnCheckUsername.addEventListener("click", function() {
@@ -434,6 +453,96 @@
             alert("아이디 중복 확인 처리 중 오류가 발생했습니다.");
         });
     });
+
+    // 이메일 인증 코드 발송 (/api/auth/send_code POST)
+    if (btnSendEmailCode) {
+        btnSendEmailCode.addEventListener("click", function() {
+            const emailVal = email.value.trim();
+            if (!emailVal || !email.validity.valid) {
+                alert("올바른 이메일 주소를 입력해 주세요.");
+                email.focus();
+                return;
+            }
+
+            btnSendEmailCode.disabled = true;
+            btnSendEmailCode.textContent = "발송 중...";
+
+            fetch("/api/auth/send_code", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email: emailVal })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                btnSendEmailCode.disabled = false;
+                btnSendEmailCode.textContent = "재전송";
+
+                if (data.success) {
+                    alert("📩 이메일로 6자리 인증 코드가 발송되었습니다.");
+                    emailCodeGroup.style.display = "block";
+                    emailHelp.textContent = "✅ 인증 코드가 이메일로 발송되었습니다.";
+                    emailHelp.className = "help success";
+                    emailCode.focus();
+                } else {
+                    alert(data.message || "❌ 이메일 발송에 실패했습니다.");
+                    emailHelp.textContent = data.message || "이메일 발송 실패. 다시 시도해 주세요.";
+                    emailHelp.className = "help error";
+                }
+            })
+            .catch(function(err) {
+                btnSendEmailCode.disabled = false;
+                btnSendEmailCode.textContent = "코드 전송";
+                console.error("이메일 코드 발송 오류:", err);
+                alert("이메일 발송 처리 중 오류가 발생했습니다.");
+            });
+        });
+    }
+
+    // 이메일 인증 코드 검증 (/api/auth/valid_code POST)
+    if (btnVerifyEmailCode) {
+        btnVerifyEmailCode.addEventListener("click", function() {
+            const emailVal = email.value.trim();
+            const codeVal = emailCode.value.trim();
+
+            if (!codeVal || codeVal.length !== 6) {
+                alert("6자리 인증 코드를 정확히 입력해 주세요.");
+                emailCode.focus();
+                return;
+            }
+
+            fetch("/api/auth/valid_code", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email: emailVal, code: codeVal })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert("🎉 이메일 인증이 성공적으로 완료되었습니다!");
+                    isEmailVerified = true;
+                    emailCodeHelp.textContent = "✅ 이메일 인증이 완료되었습니다.";
+                    emailCodeHelp.className = "help success";
+                    email.readOnly = true;
+                    emailCode.readOnly = true;
+                    btnSendEmailCode.disabled = true;
+                    btnVerifyEmailCode.disabled = true;
+                } else {
+                    alert(data.message || "❌ 인증 코드가 올바르지 않거나 만료되었습니다.");
+                    emailCodeHelp.textContent = "❌ 인증 코드가 올바르지 않거나 만료되었습니다.";
+                    emailCodeHelp.className = "help error";
+                    isEmailVerified = false;
+                }
+            })
+            .catch(function(err) {
+                console.error("이메일 인증 코드 검증 오류:", err);
+                alert("인증 코드 검증 중 오류가 발생했습니다.");
+            });
+        });
+    }
 
     document.getElementById("btnSearchAddress").addEventListener("click", function () {
         const addr = prompt("도로명 주소를 입력해 주세요:", "서울시 강남구 테헤란로 123");
@@ -542,6 +651,16 @@
         if (!email.value.trim() || !email.validity.valid) {
             alert("올바른 이메일을 입력해 주세요.");
             email.focus();
+            return;
+        }
+
+        if (!isEmailVerified) {
+            alert("이메일 인증(코드 확인)을 완료해 주세요.");
+            if (emailCodeGroup.style.display === "none") {
+                btnSendEmailCode.focus();
+            } else {
+                emailCode.focus();
+            }
             return;
         }
 

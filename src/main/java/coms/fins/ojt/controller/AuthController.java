@@ -101,4 +101,41 @@ public class AuthController {
         result.put("success", true);
         return ResponseEntity.ok(result);
     }
+
+    /**
+     * 회원가입 이메일 코드 전송 API (/api/auth/send_code)
+     */
+    @PostMapping("/send_code")
+    public ResponseEntity<Map<String, Object>> sendCode(@RequestBody(required = false) Map<String, String> requestBody) {
+        Map<String, Object> response = new HashMap<>();
+        String email = requestBody != null ? requestBody.get("email") : null;
+
+        boolean success = userService.sendRegisterCode(email);
+        response.put("success", success);
+        if (success) {
+            response.put("message", "인증 코드가 이메일로 발송되었습니다.");
+        } else {
+            response.put("message", "이메일 발송 실패. 이메일 주소를 확인해주세요.");
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 이메일 코드 검증 API (/api/auth/valid_code)
+     */
+    @PostMapping("/valid_code")
+    public ResponseEntity<Map<String, Object>> validCode(@RequestBody(required = false) Map<String, String> requestBody) {
+        Map<String, Object> response = new HashMap<>();
+        String email = requestBody != null ? requestBody.get("email") : null;
+        String code = requestBody != null ? (requestBody.containsKey("code") ? requestBody.get("code") : requestBody.get("auth_code")) : null;
+
+        boolean success = userService.verifyEmailCode(email, code);
+        response.put("success", success);
+        if (success) {
+            response.put("message", "이메일 인증이 완료되었습니다.");
+        } else {
+            response.put("message", "인증 코드가 올바르지 않거나 만료되었습니다.");
+        }
+        return ResponseEntity.ok(response);
+    }
 }

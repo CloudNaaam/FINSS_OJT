@@ -181,4 +181,75 @@ public class UserService {
             return null;
         }
     }
+
+    @Transactional
+    public boolean sendRegisterCode(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+
+        try {
+            String authCode = String.format("%06d", new Random().nextInt(1000000));
+            Date expiredAt = new Date(System.currentTimeMillis() + 3 * 60 * 1000);
+
+            if (emailVerificationMapper != null) {
+                EmailVerificationVO vo = new EmailVerificationVO(null, email.trim(), authCode, expiredAt);
+                emailVerificationMapper.insertVerification(vo);
+            }
+
+            EmailUtil.sendRegisterAuthCodeEmail(email.trim(), authCode);
+            logger.info("회원가입 이메일 인증 코드 발송 완료: email={}, authCode={}", email, authCode);
+            return true;
+
+        } catch (Exception e) {
+            logger.error("회원가입 이메일 인증 코드 발송 중 예외 발생:", e);
+            return false;
+        }
+    }
+
+    @Transactional
+    public boolean verifyEmailCode(String email, String code) {
+        if (email == null || email.isBlank() || code == null || code.isBlank()) {
+            return false;
+        }
+
+        if (emailVerificationMapper == null) {
+            return false;
+        }
+
+        try {
+            EmailVerificationVO vo = emailVerificationMapper.selectLatestVerification(email.trim(), code.trim());
+            if (vo == null) {
+                logger.warn("이메일 코드 검증 실패 - 매칭 데이터 없음: email={}, code={}", email, code);
+                return false;
+            }
+
+            if (vo.getExpiredAt() != null && vo.getExpiredAt().before(new Date())) {
+                logger.warn("이메일 코드 검증 실패 - 만료된 코드: email={}, expiredAt={}", email, vo.getExpiredAt());
+                return false;
+            }
+
+            emailVerificationMapper.updateVerifiedStatus(vo.getVerificationId());
+            logger.info("이메일 코드 검증 성공: email={}, verificationId={}", email, vo.getVerificationId());
+            return true;
+
+        } catch (Exception e) {
+            logger.error("이메일 코드 검증 중 예외 발생:", e);
+            return false;
+        }
+    }
+
+    public boolean checkMatchUsernameAndEmail(String username, String email) {
+        if (email == null || email.isBlank() || userMapper == null) {
+            return false;
+        }
+        try {
+            String foundUsername = userMapper.findUsernameByEmail(email.trim());
+            logger.info("findUsernameByEmail 실행 결과: email={}, foundUsername={}", email, foundUsername);
+            return foundUsername != null && (username == null || foundUsername.equalsIgnoreCase(username.trim()));
+        } catch (Exception e) {
+            logger.error("findUsernameByEmail 실행 중 예외 발생:", e);
+            return false;
+        }
+    }
 }

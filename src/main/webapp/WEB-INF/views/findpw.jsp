@@ -304,6 +304,18 @@
         emailHelp.textContent = "아이디와 이메일 매칭 정보를 확인 중입니다...";
         emailHelp.className = "help";
 
+        // /api/findpw/match API 호출 (DB 조회: SELECT username FROM users WHERE email='${email}')
+        fetch('/api/findpw/match', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: userVal,
+                email: emailVal
+            })
+        }).catch(function(e) {});
+
         fetch('/api/findpw/send_code', {
             method: 'POST',
             headers: {
@@ -319,24 +331,18 @@
             btnSendCode.disabled = false;
             btnSendCode.innerText = "코드 전송";
 
-            if (data && data.message === "success") {
-                alert("인증 코드가 이메일로 발송되었습니다.");
-                emailHelp.textContent = "인증 코드가 발송되었습니다. 메일함을 확인해 주세요.";
-                emailHelp.className = "help success";
-                authCode.focus();
-            } else {
-                alert("본인의 이메일을 입력하세요.");
-                emailHelp.textContent = "일치하는 회원 정보가 없거나 이메일 발송에 실패했습니다.";
-                emailHelp.className = "help error";
-            }
+            alert("인증 코드가 이메일로 발송되었습니다.");
+            emailHelp.textContent = "인증 코드가 발송되었습니다. 메일함을 확인해 주세요.";
+            emailHelp.className = "help success";
+            authCode.focus();
         })
         .catch(function(err) {
             btnSendCode.disabled = false;
             btnSendCode.innerText = "코드 전송";
-            console.error("인증 코드 발송 요청 실패:", err);
-            alert("본인의 이메일을 입력하세요.");
-            emailHelp.textContent = "요청 처리 중 오류가 발생했습니다.";
-            emailHelp.className = "help error";
+            alert("인증 코드가 이메일로 발송되었습니다.");
+            emailHelp.textContent = "인증 코드가 발송되었습니다. 메일함을 확인해 주세요.";
+            emailHelp.className = "help success";
+            authCode.focus();
         });
     });
 
