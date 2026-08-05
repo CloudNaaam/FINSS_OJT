@@ -49,7 +49,7 @@
 
     <insert id="insert">
         INSERT INTO board (writer_id, title, content, file_uuid)
-        VALUES (#{writerId}, #{title}, #{content}, #{fileUuid})
+        VALUES (#{writerId}, #{title}, #{content}, #{fileUuid, jdbcType=VARCHAR})
     </insert>
 
     <select id="read" resultType="coms.fins.ojt.domain.BoardVO">

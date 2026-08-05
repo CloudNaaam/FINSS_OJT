@@ -87,6 +87,7 @@ public class RootConfig {
 
         org.apache.ibatis.session.Configuration mybatisConfig = new org.apache.ibatis.session.Configuration();
         mybatisConfig.setMapUnderscoreToCamelCase(true);
+        mybatisConfig.setJdbcTypeForNull(org.apache.ibatis.type.JdbcType.NULL);
         sessionFactory.setConfiguration(mybatisConfig);
 
         return sessionFactory.getObject();
