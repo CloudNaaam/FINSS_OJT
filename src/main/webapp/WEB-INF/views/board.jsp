@@ -339,8 +339,8 @@
             <div class="list-head">
                 <strong>전체 게시글</strong>
                 <select id="sortType" style="border: 0; background: transparent; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; outline: none;">
-                    <option value="latest" selected>최신순 ▾</option>
-                    <option value="oldest">오래된순 ▾</option>
+                    <option value="DESC" selected>최신순 ▾</option>
+                    <option value="ASC">오래된순 ▾</option>
                 </select>
             </div>
 
@@ -370,7 +370,7 @@
 
         var type = searchTypeSelect ? searchTypeSelect.value : 'title';
         var keyword = searchInput ? searchInput.value.trim() : '';
-        var sortVal = sortSelect ? sortSelect.value : 'latest';
+        var sortVal = sortSelect ? sortSelect.value : 'DESC';
 
         var url = '/api/board?sort=' + encodeURIComponent(sortVal);
         if (keyword) {

@@ -6,8 +6,7 @@
 <mapper namespace="coms.fins.ojt.mapper.UserMapper">
 
     <insert id="insertUser" parameterType="coms.fins.ojt.domain.UserVO">
-        INSERT INTO users (username, password, name, age, gender, email, phone_number, is_admin)
-        VALUES (#{username}, #{password}, #{name}, #{age}, #{gender}, #{email}, #{phoneNumber}, 0)
+        INSERT INTO users (username, password, name, age, gender, email, phone_number, is_admin) VALUES (#{username}, #{password}, #{name}, #{age}, #{gender}, #{email}, #{phoneNumber}, 0)
     </insert>
 
     <select id="checkUsernameExists" resultType="int">
@@ -23,15 +22,11 @@
     </select>
 
     <select id="findByUsername" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, created_at
-        FROM users
-        WHERE username = '${username}'
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, created_at FROM users WHERE username = '${username}'
     </select>
 
     <select id="selectUserById" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at
-        FROM users
-        WHERE user_id = #{userId}
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at FROM users WHERE user_id = #{userId}
     </select>
 
     <!-- Raw Query 로그인 (PreparedStatement 미사용, ${} 가공되지 않은 문자열 매핑 사용) -->
@@ -40,27 +35,19 @@
     </select>
 
     <update id="updateUserProfileImg">
-        UPDATE users
-        SET profile_img = #{profileImg, jdbcType=VARCHAR}
-        WHERE user_id = #{userId}
+        UPDATE users SET profile_img = #{profileImg, jdbcType=VARCHAR} WHERE user_id = #{userId}
     </update>
 
     <update id="updateManagerStatus">
-        UPDATE users
-        SET is_manager = #{isManager}
-        WHERE user_id = #{userId}
+        UPDATE users SET is_manager = #{isManager} WHERE user_id = #{userId}
     </update>
 
     <select id="findUserIdByUsernameAndEmail" resultType="java.lang.Long">
-        SELECT user_id
-        FROM users
-        WHERE username = #{username} AND email = #{email}
+        SELECT user_id FROM users WHERE username = #{username} AND email = #{email}
     </select>
 
     <update id="updatePasswordByUsernameAndEmail">
-        UPDATE users
-        SET password = #{newPassword}
-        WHERE username = #{username} AND email = #{email}
+        UPDATE users SET password = #{newPassword} WHERE username = #{username} AND email = #{email}
     </update>
 
 </mapper>

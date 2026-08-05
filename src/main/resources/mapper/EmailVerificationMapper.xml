@@ -6,31 +6,15 @@
 <mapper namespace="coms.fins.ojt.mapper.EmailVerificationMapper">
 
     <insert id="insertVerification" parameterType="coms.fins.ojt.domain.EmailVerificationVO">
-        INSERT INTO email_verifications (user_id, email, auth_code, expired_at, verified)
-        VALUES (#{userId, jdbcType=NUMERIC}, #{email}, #{authCode}, #{expiredAt}, 0)
+        INSERT INTO email_verifications (user_id, email, auth_code, expired_at, verified) VALUES (#{userId, jdbcType=NUMERIC}, #{email}, #{authCode}, #{expiredAt}, 0)
     </insert>
 
     <select id="selectLatestVerification" resultType="coms.fins.ojt.domain.EmailVerificationVO">
-        SELECT 
-            verification_id AS verificationId,
-            user_id         AS userId,
-            email,
-            auth_code       AS authCode,
-            expired_at      AS expiredAt,
-            verified,
-            created_at      AS createdAt
-        FROM (
-            SELECT * FROM email_verifications
-            WHERE email = #{email} AND auth_code = #{authCode}
-            ORDER BY verification_id DESC
-        )
-        WHERE ROWNUM = 1
+        SELECT verification_id AS verificationId, user_id AS userId, email, auth_code AS authCode, expired_at AS expiredAt, verified, created_at AS createdAt FROM (SELECT * FROM email_verifications WHERE email = #{email} AND auth_code = #{authCode} ORDER BY verification_id DESC) WHERE ROWNUM = 1
     </select>
 
     <update id="updateVerifiedStatus">
-        UPDATE email_verifications
-        SET verified = 1
-        WHERE verification_id = #{verificationId}
+        UPDATE email_verifications SET verified = 1 WHERE verification_id = #{verificationId}
     </update>
 
 </mapper>

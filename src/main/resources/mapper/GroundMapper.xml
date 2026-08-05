@@ -3,109 +3,19 @@
 <mapper namespace="coms.fins.ojt.mapper.GroundMapper">
 
     <insert id="insertGround" parameterType="coms.fins.ojt.domain.GroundVO">
-        INSERT INTO ground (
-            manager_id,
-            name,
-            address,
-            address_detail,
-            region,
-            size_info,
-            is_indoor,
-            grass_type,
-            parking_type,
-            has_shower,
-            has_lights,
-            has_shoes_rental,
-            has_ball_rental,
-            price_per_hour,
-            notice,
-            created_at
-        ) VALUES (
-            #{managerId},
-            #{name},
-            #{address},
-            #{addressDetail, jdbcType=VARCHAR},
-            #{region, jdbcType=VARCHAR},
-            #{sizeInfo, jdbcType=VARCHAR},
-            NVL(#{isIndoor}, 0),
-            NVL(#{grassType, jdbcType=VARCHAR}, '인조잔디'),
-            NVL(#{parkingType}, 0),
-            NVL(#{hasShower}, 0),
-            NVL(#{hasLights}, 1),
-            NVL(#{hasShoesRental}, 0),
-            NVL(#{hasBallRental}, 0),
-            NVL(#{pricePerHour}, 0),
-            #{notice, jdbcType=CLOB},
-            CURRENT_TIMESTAMP
-        )
+        INSERT INTO ground (manager_id, name, address, address_detail, region, size_info, is_indoor, grass_type, parking_type, has_shower, has_lights, has_shoes_rental, has_ball_rental, price_per_hour, notice, created_at) VALUES (#{managerId}, #{name}, #{address}, #{addressDetail, jdbcType=VARCHAR}, #{region, jdbcType=VARCHAR}, #{sizeInfo, jdbcType=VARCHAR}, NVL(#{isIndoor}, 0), NVL(#{grassType, jdbcType=VARCHAR}, '인조잔디'), NVL(#{parkingType}, 0), NVL(#{hasShower}, 0), NVL(#{hasLights}, 1), NVL(#{hasShoesRental}, 0), NVL(#{hasBallRental}, 0), NVL(#{pricePerHour}, 0), #{notice, jdbcType=CLOB}, CURRENT_TIMESTAMP)
     </insert>
 
     <update id="updateGround" parameterType="coms.fins.ojt.domain.GroundVO">
-        UPDATE ground
-        SET 
-            name = #{name},
-            address = #{address},
-            address_detail = #{addressDetail, jdbcType=VARCHAR},
-            region = #{region, jdbcType=VARCHAR},
-            size_info = #{sizeInfo, jdbcType=VARCHAR},
-            is_indoor = NVL(#{isIndoor}, is_indoor),
-            grass_type = NVL(#{grassType, jdbcType=VARCHAR}, grass_type),
-            parking_type = NVL(#{parkingType}, parking_type),
-            has_shower = NVL(#{hasShower}, has_shower),
-            has_lights = NVL(#{hasLights}, has_lights),
-            has_shoes_rental = NVL(#{hasShoesRental}, has_shoes_rental),
-            has_ball_rental = NVL(#{hasBallRental}, has_ball_rental),
-            price_per_hour = NVL(#{pricePerHour}, price_per_hour),
-            notice = #{notice, jdbcType=CLOB}
-        WHERE ground_id = #{groundId}
-          AND manager_id = #{managerId}
+        UPDATE ground SET name = #{name}, address = #{address}, address_detail = #{addressDetail, jdbcType=VARCHAR}, region = #{region, jdbcType=VARCHAR}, size_info = #{sizeInfo, jdbcType=VARCHAR}, is_indoor = NVL(#{isIndoor}, is_indoor), grass_type = NVL(#{grassType, jdbcType=VARCHAR}, grass_type), parking_type = NVL(#{parkingType}, parking_type), has_shower = NVL(#{hasShower}, has_shower), has_lights = NVL(#{hasLights}, has_lights), has_shoes_rental = NVL(#{hasShoesRental}, has_shoes_rental), has_ball_rental = NVL(#{hasBallRental}, has_ball_rental), price_per_hour = NVL(#{pricePerHour}, price_per_hour), notice = #{notice, jdbcType=CLOB} WHERE ground_id = #{groundId} AND manager_id = #{managerId}
     </update>
 
     <select id="selectGroundsByManagerId" resultType="coms.fins.ojt.domain.GroundVO">
-        SELECT 
-            ground_id AS groundId,
-            manager_id AS managerId,
-            name,
-            address,
-            address_detail AS addressDetail,
-            region,
-            size_info AS sizeInfo,
-            is_indoor AS isIndoor,
-            grass_type AS grassType,
-            parking_type AS parkingType,
-            has_shower AS hasShower,
-            has_lights AS hasLights,
-            has_shoes_rental AS hasShoesRental,
-            has_ball_rental AS hasBallRental,
-            price_per_hour AS pricePerHour,
-            notice,
-            created_at AS createdAt
-        FROM ground
-        WHERE manager_id = #{managerId}
-        ORDER BY ground_id DESC
+        SELECT ground_id AS groundId, manager_id AS managerId, name, address, address_detail AS addressDetail, region, size_info AS sizeInfo, is_indoor AS isIndoor, grass_type AS grassType, parking_type AS parkingType, has_shower AS hasShower, has_lights AS hasLights, has_shoes_rental AS hasShoesRental, has_ball_rental AS hasBallRental, price_per_hour AS pricePerHour, notice, created_at AS createdAt FROM ground WHERE manager_id = #{managerId} ORDER BY ground_id DESC
     </select>
 
     <select id="selectGroundById" resultType="coms.fins.ojt.domain.GroundVO">
-        SELECT 
-            ground_id AS groundId,
-            manager_id AS managerId,
-            name,
-            address,
-            address_detail AS addressDetail,
-            region,
-            size_info AS sizeInfo,
-            is_indoor AS isIndoor,
-            grass_type AS grassType,
-            parking_type AS parkingType,
-            has_shower AS hasShower,
-            has_lights AS hasLights,
-            has_shoes_rental AS hasShoesRental,
-            has_ball_rental AS hasBallRental,
-            price_per_hour AS pricePerHour,
-            notice,
-            created_at AS createdAt
-        FROM ground
-        WHERE ground_id = #{groundId}
+        SELECT ground_id AS groundId, manager_id AS managerId, name, address, address_detail AS addressDetail, region, size_info AS sizeInfo, is_indoor AS isIndoor, grass_type AS grassType, parking_type AS parkingType, has_shower AS hasShower, has_lights AS hasLights, has_shoes_rental AS hasShoesRental, has_ball_rental AS hasBallRental, price_per_hour AS pricePerHour, notice, created_at AS createdAt FROM ground WHERE ground_id = #{groundId}
     </select>
 
 </mapper>

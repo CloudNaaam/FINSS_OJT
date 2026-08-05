@@ -6,14 +6,11 @@
 <mapper namespace="coms.fins.ojt.mapper.FileMapper">
 
     <insert id="insertFile">
-        INSERT INTO files (file_uuid, original_filename)
-        VALUES (#{fileUuid}, #{originalFilename})
+        INSERT INTO files (file_uuid, original_filename) VALUES (#{fileUuid}, #{originalFilename})
     </insert>
 
     <select id="selectFileByUuid" resultType="coms.fins.ojt.domain.FileVO">
-        SELECT file_uuid AS fileUuid, original_filename AS originalFilename, created_at AS createdAt
-        FROM files
-        WHERE file_uuid = #{fileUuid}
+        SELECT file_uuid AS fileUuid, original_filename AS originalFilename, created_at AS createdAt FROM files WHERE file_uuid = #{fileUuid}
     </select>
 
     <delete id="deleteFileByUuid">

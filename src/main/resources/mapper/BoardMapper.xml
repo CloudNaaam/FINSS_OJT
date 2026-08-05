@@ -6,79 +6,24 @@
 <mapper namespace="coms.fins.ojt.mapper.BoardMapper">
 
     <select id="getList" resultType="coms.fins.ojt.domain.BoardVO">
-        SELECT 
-            b.board_id   AS boardId,
-            b.writer_id  AS writerId,
-            b.title,
-            b.content,
-            b.file_uuid  AS fileUuid,
-            b.created_at AS createdAt,
-            b.updated_at AS updatedAt,
-            u.username   AS writer
-        FROM board b
-        LEFT JOIN users u ON b.writer_id = u.user_id
-        ORDER BY b.board_id DESC
+        SELECT b.board_id AS boardId, b.writer_id AS writerId, b.title, b.content, b.file_uuid AS fileUuid, b.created_at AS createdAt, b.updated_at AS updatedAt, u.username AS writer FROM board b LEFT JOIN users u ON b.writer_id = u.user_id ORDER BY b.board_id DESC
     </select>
 
     <select id="searchBoards" resultType="coms.fins.ojt.domain.BoardVO">
-        SELECT 
-            b.board_id   AS boardId,
-            b.writer_id  AS writerId,
-            b.title,
-            b.content,
-            b.file_uuid  AS fileUuid,
-            b.created_at AS createdAt,
-            b.updated_at AS updatedAt,
-            u.username   AS writer
-        FROM board b
-        LEFT JOIN users u ON b.writer_id = u.user_id
-        <where>
-            <if test="writer != null and writer != ''">
-                AND (u.username LIKE '%' || ${writer} || '%' OR u.name LIKE '%' || ${writer} || '%')
-            </if>
-            <if test="title != null and title != ''">
-                AND b.title LIKE '%' || ${title} || '%'
-            </if>
-            <if test="content != null and content != ''">
-                AND b.content LIKE '%' || ${content} || '%'
-            </if>
-        </where>
-        <choose>
-            <when test="sort != null and sort != ''">
-                ORDER BY ${sort}
-            </when>
-            <otherwise>
-                ORDER BY b.board_id DESC
-            </otherwise>
-        </choose>
+        SELECT b.board_id AS boardId, b.writer_id AS writerId, b.title, b.content, b.file_uuid AS fileUuid, b.created_at AS createdAt, b.updated_at AS updatedAt, u.username AS writer FROM board b LEFT JOIN users u ON b.writer_id = u.user_id <where><if test="writer != null and writer != ''"> AND (u.username LIKE '%' || ${writer} || '%' OR u.name LIKE '%' || ${writer} || '%')</if><if test="title != null and title != ''"> AND b.title LIKE '%' || ${title} || '%'</if><if test="content != null and content != ''"> AND b.content LIKE '%' || ${content} || '%'</if></where> ORDER BY b.board_id ${sort != null and sort != '' ? sort : 'DESC'}
     </select>
 
-
     <insert id="insert">
-        INSERT INTO board (writer_id, title, content, file_uuid)
-        VALUES (#{writerId}, #{title}, #{content}, #{fileUuid, jdbcType=VARCHAR})
+        INSERT INTO board (writer_id, title, content, file_uuid) VALUES (#{writerId}, #{title}, #{content}, #{fileUuid, jdbcType=VARCHAR})
     </insert>
 
     <select id="read" resultType="coms.fins.ojt.domain.BoardVO">
-        SELECT board_id, writer_id, title, content, file_uuid, created_at, updated_at 
-        FROM board 
-        WHERE board_id = #{boardId}
+        SELECT board_id, writer_id, title, content, file_uuid, created_at, updated_at FROM board WHERE board_id = #{boardId}
     </select>
 
     <select id="selectBoardDetailById" resultType="coms.fins.ojt.domain.BoardDetailResponseVO">
-        SELECT 
-            b.title,
-            b.content,
-            b.file_uuid         AS fileUuid,
-            f.original_filename AS originalFilename,
-            b.updated_at        AS updatedAt,
-            u.username          AS writer
-        FROM board b
-        LEFT JOIN users u ON b.writer_id = u.user_id
-        LEFT JOIN files f ON b.file_uuid = f.file_uuid
-        WHERE b.board_id = #{boardId}
+        SELECT b.title, b.content, b.file_uuid AS fileUuid, f.original_filename AS originalFilename, b.updated_at AS updatedAt, u.username AS writer FROM board b LEFT JOIN users u ON b.writer_id = u.user_id LEFT JOIN files f ON b.file_uuid = f.file_uuid WHERE b.board_id = #{boardId}
     </select>
-
 
     <delete id="deleteBoard">
         DELETE FROM board WHERE board_id = #{boardId}
