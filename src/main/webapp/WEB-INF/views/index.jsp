@@ -653,6 +653,11 @@
                 <option value="3">레벨 3</option>
                 <option value="4">레벨 4</option>
                 <option value="5">레벨 5</option>
+                <option value="6">레벨 6</option>
+                <option value="7">레벨 7</option>
+                <option value="8">레벨 8</option>
+                <option value="9">레벨 9</option>
+                <option value="10">레벨 10</option>
             </select>
         </section>
 
@@ -698,26 +703,110 @@
 </div>
 
 <script>
-    document.querySelectorAll(".date-card").forEach(function (button) {
-        button.addEventListener("click", function () {
-            document.querySelectorAll(".date-card").forEach(function (item) {
-                item.classList.remove("active");
-            });
-            button.classList.add("active");
-        });
-    });
-
-    document.querySelectorAll(".filter").forEach(function (button) {
-        button.addEventListener("click", function () {
-            if (!button.classList.contains("primary")) {
-                button.classList.toggle("active");
-            }
-        });
-    });
+    var currentFilter = {
+        is_end: 0,
+        evening: null,
+        is_gender: null,
+        level: null,
+        date: null
+    };
 
     var allMatchesData = [];
     var allGroundsData = null;
     var currentSearchTab = 'match';
+
+    function fetchMatches() {
+        var params = new URLSearchParams();
+        if (currentFilter.is_end === 1) params.append('is_end', '1');
+        if (currentFilter.evening) params.append('evening', currentFilter.evening);
+        if (currentFilter.is_gender) params.append('is_gender', currentFilter.is_gender);
+        if (currentFilter.level) params.append('level', currentFilter.level);
+        if (currentFilter.date) params.append('date', currentFilter.date);
+
+        var queryString = params.toString();
+        var url = '/api/matches' + (queryString ? '?' + queryString : '');
+        console.log('[fetchMatches] API 호출:', url, '필터상태:', currentFilter);
+
+        fetch(url)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                allMatchesData = data || [];
+                console.log('[fetchMatches] 수신 데이터 건수:', allMatchesData.length);
+                var container = document.getElementById('match-list-container');
+                if (!container) return;
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="padding: 30px 0; color: #888; text-align: center;">조건에 맞는 등록된 매치가 없습니다.</p>';
+                    return;
+                }
+                var html = '';
+                data.forEach(function(m) {
+                    var matchId = m.matchId || m.match_id || 1;
+                    var fieldName = m.fieldName || m.field_name || '경기장';
+                    var matchAt = m.matchAt || m.match_at || '';
+                    var timeStr = matchAt ? matchAt.substring(11, 16) : '19:00';
+                    var gender = m.gender || 'ANY';
+                    var genderStr = gender === 'ANY' ? '남녀 모두' : (gender === 'MALE' ? '남성' : '여성');
+                    var matchLevel = m.matchLevel || m.match_level || 5;
+                    var numMembers = m.numMembers || m.num_members || 12;
+                    var statusStr = (m.status === 'CLOSED') ? '마감됨' : '신청 가능';
+                    var statusClass = (m.status === 'CLOSED') ? 'status closed' : 'status';
+                    var photoUrl = 'https://i.namu.wiki/i/lQIGadGVZtfkSOOba-BOK0J0NpytK5Ur9E3phQeFThfpxuDNKv0c0-rdFmNw5F6fOehk0-kFKCGrDFOeD51S9A.webp';
+
+                    html += '<article class="match-card" style="cursor: pointer;" onclick="location.href=\'/matches/' + matchId + '\'">' +
+                                '<div class="time">' + timeStr + '<small>120분</small></div>' +
+                                '<div style="flex: 1;">' +
+                                    '<h3 class="match-title">' + fieldName + '</h3>' +
+                                    '<p class="match-meta">' + genderStr + ' · 레벨 ' + matchLevel + ' · 모집 ' + numMembers + '명</p>' +
+                                    '<div class="tags">' +
+                                        '<span class="tag beginner">모든 레벨</span>' +
+                                        '<span class="tag">풋살화</span>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<img src="' + photoUrl + '" alt="경기장" style="width: 76px; height: 56px; object-fit: cover; border-radius: 8px; margin: 0 10px;">' +
+                                '<button class="' + statusClass + '" type="button" onclick="event.stopPropagation(); location.href=\'/matches/' + matchId + '\'">' + statusStr + '</button>' +
+                            '</article>';
+                });
+                container.innerHTML = html;
+            })
+            .catch(function(err) {
+                console.error('매치 목록 로드 실패:', err);
+            });
+    }
+
+    function toggleMatchFilter(type) {
+        if (type === 'is_end') {
+            var btn = document.getElementById("filterHideEnd");
+            if (btn) {
+                btn.classList.toggle("active");
+                currentFilter.is_end = btn.classList.contains("active") ? 1 : 0;
+            }
+        } else if (type === 'evening') {
+            var btn = document.getElementById("filterEvening");
+            if (btn) {
+                btn.classList.toggle("active");
+                currentFilter.evening = btn.classList.contains("active") ? 'true' : null;
+            }
+        }
+        fetchMatches();
+    }
+
+    function changeMatchFilter(type, value) {
+        var selectElem = document.getElementById(type === 'is_gender' ? 'filterGender' : 'filterLevel');
+        if (selectElem) {
+            if (value) {
+                selectElem.classList.add("active");
+            } else {
+                selectElem.classList.remove("active");
+            }
+        }
+
+        if (type === 'is_gender') {
+            currentFilter.is_gender = value || null;
+        } else if (type === 'level') {
+            currentFilter.level = value || null;
+        }
+        fetchMatches();
+    }
 
     function openSearchModal() {
         document.getElementById('searchModal').style.display = 'flex';
@@ -820,7 +909,6 @@
             resultsArea.innerHTML = html;
 
         } else {
-            // 구장 검색 -> POST /api/search/ground XPath API 호출
             resultsArea.innerHTML = '<div style="padding: 30px 0; text-align: center; color: #64748b; font-size: 14px;">🔍 XPath 로 구장 및 일정 데이터를 검색 중입니다...</div>';
 
             var xmlPayload = '<?xml version="1.0" encoding="UTF-8"?><search><ground_name>' + keyword + '</ground_name></search>';
@@ -860,132 +948,22 @@
         }
     }
 
-    var currentFilter = {
-        is_end: 0,
-        evening: null,
-        is_gender: null,
-        level: null,
-        date: null
-    };
-
-    function fetchMatches() {
-        var params = new URLSearchParams();
-        if (currentFilter.is_end === 1) params.append('is_end', '1');
-        if (currentFilter.evening) params.append('evening', currentFilter.evening);
-        if (currentFilter.is_gender) params.append('is_gender', currentFilter.is_gender);
-        if (currentFilter.level) params.append('level', currentFilter.level);
-        if (currentFilter.date) params.append('date', currentFilter.date);
-
-        var queryString = params.toString();
-        var url = '/api/matches' + (queryString ? '?' + queryString : '');
-        console.log('[fetchMatches] API 호출:', url, '필터상태:', currentFilter);
-
-        fetch(url)
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                allMatchesData = data || [];
-                console.log('[fetchMatches] 수신 데이터 건수:', allMatchesData.length);
-                var container = document.getElementById('match-list-container');
-                if (!container) return;
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<p style="padding: 30px 0; color: #888; text-align: center;">조건에 맞는 등록된 매치가 없습니다.</p>';
-                    return;
-                }
-                var html = '';
-                data.forEach(function(m) {
-                    var matchId = m.matchId || m.match_id || 1;
-                    var fieldName = m.fieldName || m.field_name || '경기장';
-                    var matchAt = m.matchAt || m.match_at || '';
-                    var timeStr = matchAt ? matchAt.substring(11, 16) : '19:00';
-                    var gender = m.gender || 'ANY';
-                    var genderStr = gender === 'ANY' ? '남녀 모두' : (gender === 'MALE' ? '남성' : '여성');
-                    var matchLevel = m.matchLevel || m.match_level || 5;
-                    var numMembers = m.numMembers || m.num_members || 12;
-                    var statusStr = (m.status === 'CLOSED') ? '마감됨' : '신청 가능';
-                    var statusClass = (m.status === 'CLOSED') ? 'status closed' : 'status';
-                    var photoUrl = 'https://i.namu.wiki/i/lQIGadGVZtfkSOOba-BOK0J0NpytK5Ur9E3phQeFThfpxuDNKv0c0-rdFmNw5F6fOehk0-kFKCGrDFOeD51S9A.webp';
-
-                    html += '<article class="match-card" style="cursor: pointer;" onclick="location.href=\'/matches/' + matchId + '\'">' +
-                                '<div class="time">' + timeStr + '<small>120분</small></div>' +
-                                '<div style="flex: 1;">' +
-                                    '<h3 class="match-title">' + fieldName + '</h3>' +
-                                    '<p class="match-meta">' + genderStr + ' · 레벨 ' + matchLevel + ' · 모집 ' + numMembers + '명</p>' +
-                                    '<div class="tags">' +
-                                        '<span class="tag beginner">모든 레벨</span>' +
-                                        '<span class="tag">풋살화</span>' +
-                                    '</div>' +
-                                '</div>' +
-                                '<img src="' + photoUrl + '" alt="경기장" style="width: 76px; height: 56px; object-fit: cover; border-radius: 8px; margin: 0 10px;">' +
-                                '<button class="' + statusClass + '" type="button" onclick="event.stopPropagation(); location.href=\'/matches/' + matchId + '\'">' + statusStr + '</button>' +
-                            '</article>';
-                });
-                container.innerHTML = html;
-            })
-            .catch(function(err) {
-                console.error('매치 목록 로드 실패:', err);
-            });
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-        // 날짜 카드 선택 이벤트
+        // 날짜 카드 이벤트 바인딩
         var dateCards = document.querySelectorAll(".date-card");
         if (dateCards.length > 0) {
-            currentFilter.date = dateCards[0].dataset.date || null;
+            currentFilter.date = dateCards[0].getAttribute("data-date") || null;
             dateCards.forEach(function (button) {
                 button.addEventListener("click", function () {
                     dateCards.forEach(function (item) { item.classList.remove("active"); });
                     button.classList.add("active");
-                    currentFilter.date = button.dataset.date || null;
+                    currentFilter.date = button.getAttribute("data-date") || null;
                     fetchMatches();
                 });
             });
         }
 
-        // 필터 버튼 및 드롭다운 이벤트
-        var filterHideEnd = document.getElementById("filterHideEnd");
-        if (filterHideEnd) {
-            filterHideEnd.addEventListener("click", function() {
-                this.classList.toggle("active");
-                currentFilter.is_end = this.classList.contains("active") ? 1 : 0;
-                fetchMatches();
-            });
-        }
-
-    function toggleMatchFilter(type) {
-        if (type === 'is_end') {
-            var btn = document.getElementById("filterHideEnd");
-            if (btn) {
-                btn.classList.toggle("active");
-                currentFilter.is_end = btn.classList.contains("active") ? 1 : 0;
-            }
-        } else if (type === 'evening') {
-            var btn = document.getElementById("filterEvening");
-            if (btn) {
-                btn.classList.toggle("active");
-                currentFilter.evening = btn.classList.contains("active") ? 'true' : null;
-            }
-        }
-        fetchMatches();
-    }
-
-    function changeMatchFilter(type, value) {
-        var selectElem = document.getElementById(type === 'is_gender' ? 'filterGender' : 'filterLevel');
-        if (selectElem) {
-            if (value) {
-                selectElem.classList.add("active");
-            } else {
-                selectElem.classList.remove("active");
-            }
-        }
-
-        if (type === 'is_gender') {
-            currentFilter.is_gender = value || null;
-        } else if (type === 'level') {
-            currentFilter.level = value || null;
-        }
-        fetchMatches();
-    }
-
+        // 초기 매치 목록 조회
         fetchMatches();
 
         document.addEventListener('keydown', function(e) {
