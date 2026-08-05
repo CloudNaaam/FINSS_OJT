@@ -34,11 +34,15 @@ public class BoardService {
         return boardMapper.getList();
     }
 
-    public List<BoardVO> searchBoards(String writer, String title, String content) {
+    public List<BoardVO> searchBoards(String writer, String title, String content, String sort) {
         if (boardMapper == null) {
             return List.of();
         }
-        return boardMapper.searchBoards(writer, title, content);
+        return boardMapper.searchBoards(writer, title, content, sort);
+    }
+
+    public List<BoardVO> searchBoards(String writer, String title, String content) {
+        return searchBoards(writer, title, content, "latest");
     }
 
     public BoardDetailResponseVO getBoardDetail(Long boardId) {

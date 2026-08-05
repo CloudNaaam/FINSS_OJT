@@ -13,7 +13,8 @@ public interface BoardMapper {
     List<BoardVO> searchBoards(
             @Param("writer") String writer,
             @Param("title") String title,
-            @Param("content") String content
+            @Param("content") String content,
+            @Param("sort") String sort
     );
     void insert(BoardVO board);
     BoardVO read(Long boardId);

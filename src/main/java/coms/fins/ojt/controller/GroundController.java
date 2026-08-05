@@ -63,7 +63,6 @@ public class GroundController {
             if (managerId == null) {
                 logger.warn("구장 등록 실패: user_id 쿠키가 없거나 올바르지 않습니다.");
                 response.put("success", false);
-                response.put("message", "로그인이 필요합니다. 쿠키 정보를 확인하세요.");
                 return ResponseEntity.ok(response);
             }
 
@@ -71,7 +70,6 @@ public class GroundController {
             if (currentUser == null) {
                 logger.warn("구장 등록 실패: 존재하지 않는 회원 ID입니다. (managerId={})", managerId);
                 response.put("success", false);
-                response.put("message", "회원 정보를 찾을 수 없습니다.");
                 return ResponseEntity.ok(response);
             }
 
@@ -84,7 +82,6 @@ public class GroundController {
             if (xmlData == null || xmlData.trim().isEmpty()) {
                 logger.warn("구장 등록 실패: 요청 XML 본문이 비어있습니다.");
                 response.put("success", false);
-                response.put("message", "XML 데이터가 존재하지 않습니다.");
                 return ResponseEntity.ok(response);
             }
 
@@ -92,7 +89,6 @@ public class GroundController {
             if (ground == null) {
                 logger.warn("구장 등록 실패: XML 파싱 결과가 null입니다.");
                 response.put("success", false);
-                response.put("message", "XML 데이터 파싱에 실패했습니다.");
                 return ResponseEntity.ok(response);
             }
 
@@ -100,7 +96,6 @@ public class GroundController {
                 ground.getAddress() == null || ground.getAddress().isBlank()) {
                 logger.warn("구장 등록 실패: 필수 파싱 항목 누락. name={}, address={}", ground.getName(), ground.getAddress());
                 response.put("success", false);
-                response.put("message", "구장 이름과 주소는 필수 입력 항목입니다.");
                 return ResponseEntity.ok(response);
             }
 
@@ -109,15 +104,13 @@ public class GroundController {
             response.put("success", success);
             if (success) {
                 response.put("ground_id", ground.getGroundId());
-            } else {
-                response.put("message", "DB 저장 중 오류가 발생했습니다.");
             }
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             logger.error("구장 신규 등록 예외 발생: ", e);
+            response.clear();
             response.put("success", false);
-            response.put("message", "서버 내부 오류: " + e.getMessage());
             return ResponseEntity.ok(response);
         }
     }
@@ -139,14 +132,12 @@ public class GroundController {
             Long managerId = parseUserIdCookie(userIdCookie);
             if (managerId == null) {
                 response.put("success", false);
-                response.put("message", "로그인이 필요합니다.");
                 return ResponseEntity.ok(response);
             }
 
             // 2. XML 데이터 파싱 (ground_id 필수)
             if (xmlData == null || xmlData.trim().isEmpty()) {
                 response.put("success", false);
-                response.put("message", "XML 데이터가 누락되었습니다.");
                 return ResponseEntity.ok(response);
             }
 
@@ -154,23 +145,18 @@ public class GroundController {
             if (ground == null || ground.getGroundId() == null) {
                 logger.warn("구장 수정 실패: ground_id가 XML 요청 본문에 포함되지 않았거나 XML 파싱에 실패했습니다.");
                 response.put("success", false);
-                response.put("message", "ground_id가 누락되었거나 XML 파싱에 실패했습니다.");
                 return ResponseEntity.ok(response);
             }
 
             // 3. DB 수정
             boolean success = groundService.updateGround(ground);
             response.put("success", success);
-            if (!success) {
-                response.put("message", "구장 정보 수정에 실패했습니다. (소유권 또는 ground_id 확인 필요)");
-            }
-
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             logger.error("구장 정보 수정 예외 발생: ", e);
+            response.clear();
             response.put("success", false);
-            response.put("message", "서버 내부 오류: " + e.getMessage());
             return ResponseEntity.ok(response);
         }
     }
@@ -253,9 +239,9 @@ public class GroundController {
             }
 
             if (is == null) {
-                response.put("success", false);
-                response.put("message", "XML 파일을 찾을 수 없습니다. (" + adminBasePath + " 내 ground_schedules.xml 확인 필요)");
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+                Map<String, Object> errResp = new HashMap<>();
+                errResp.put("success", false);
+                return ResponseEntity.ok(errResp);
             }
 
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -317,9 +303,9 @@ public class GroundController {
 
         } catch (Exception e) {
             logger.error("XPath 구장 검색 처리 중 예외 발생: ", e);
-            response.put("success", false);
-            response.put("message", "XPath 구장 검색 처리 실패: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            Map<String, Object> errResp = new HashMap<>();
+            errResp.put("success", false);
+            return ResponseEntity.ok(errResp);
         }
     }
 

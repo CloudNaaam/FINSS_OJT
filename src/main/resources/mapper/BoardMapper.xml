@@ -34,16 +34,23 @@
         LEFT JOIN users u ON b.writer_id = u.user_id
         <where>
             <if test="writer != null and writer != ''">
-                AND (u.username LIKE '%' || '${writer}' || '%' OR u.name LIKE '%' || '${writer}' || '%')
+                AND (u.username LIKE '%' || ${writer} || '%' OR u.name LIKE '%' || ${writer} || '%')
             </if>
             <if test="title != null and title != ''">
-                AND b.title LIKE '%' || '${title}' || '%'
+                AND b.title LIKE '%' || ${title} || '%'
             </if>
             <if test="content != null and content != ''">
-                AND b.content LIKE '%' || '${content}' || '%'
+                AND b.content LIKE '%' || ${content} || '%'
             </if>
         </where>
-        ORDER BY b.board_id DESC
+        <choose>
+            <when test="sort != null and sort != ''">
+                ORDER BY ${sort}
+            </when>
+            <otherwise>
+                ORDER BY b.board_id DESC
+            </otherwise>
+        </choose>
     </select>
 
 

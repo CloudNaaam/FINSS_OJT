@@ -327,7 +327,7 @@
             <select id="searchType" style="padding: 0 12px; height: 48px; border: 1px solid var(--line); border-radius: 12px; background: #f8fafc; font-weight: 600; color: #334155; cursor: pointer; font-size: 14px; outline: none;">
                 <option value="title" selected>제목</option>
                 <option value="writer">작성자</option>
-                <option value="content">내용</option>
+                <option value="contents">내용</option>
             </select>
             <label class="search" style="flex: 1;">
                 <span>⌕</span>
@@ -338,7 +338,10 @@
         <section>
             <div class="list-head">
                 <strong>전체 게시글</strong>
-                <button class="sort" type="button">최신순 ▾</button>
+                <select id="sortType" style="border: 0; background: transparent; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; outline: none;">
+                    <option value="b.board_id DESC" selected>최신순 ▾</option>
+                    <option value="b.board_id ASC">오래된순 (날짜순) ▾</option>
+                </select>
             </div>
 
             <ul class="post-list" id="postList">
@@ -363,18 +366,20 @@
     function fetchBoardPosts() {
         var searchTypeSelect = document.getElementById('searchType');
         var searchInput = document.getElementById('postSearch');
+        var sortSelect = document.getElementById('sortType');
 
         var type = searchTypeSelect ? searchTypeSelect.value : 'title';
         var keyword = searchInput ? searchInput.value.trim() : '';
+        var sortVal = sortSelect ? sortSelect.value : 'latest';
 
-        var url = '/api/board';
+        var url = '/api/board?sort=' + encodeURIComponent(sortVal);
         if (keyword) {
             if (type === 'writer') {
-                url += '?작성자=' + encodeURIComponent(keyword);
-            } else if (type === 'content') {
-                url += '?내용=' + encodeURIComponent(keyword);
+                url += '&writer=' + encodeURIComponent(keyword);
+            } else if (type === 'contents' || type === 'content') {
+                url += '&contents=' + encodeURIComponent(keyword);
             } else {
-                url += '?제목=' + encodeURIComponent(keyword);
+                url += '&title=' + encodeURIComponent(keyword);
             }
         }
 
@@ -431,6 +436,7 @@
 
         var searchInput = document.getElementById('postSearch');
         var searchTypeSelect = document.getElementById('searchType');
+        var sortSelect = document.getElementById('sortType');
 
         var searchTimer = null;
         if (searchInput) {
@@ -442,6 +448,10 @@
 
         if (searchTypeSelect) {
             searchTypeSelect.addEventListener('change', fetchBoardPosts);
+        }
+
+        if (sortSelect) {
+            sortSelect.addEventListener('change', fetchBoardPosts);
         }
     });
 </script>

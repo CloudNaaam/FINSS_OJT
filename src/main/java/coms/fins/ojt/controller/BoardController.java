@@ -38,24 +38,28 @@ public class BoardController {
 
     /**
      * 게시글 목록 및 검색 API (GET /api/board, /api/board/all, /api/board/search)
-     * 파라미터: 작성자(writer/username), 제목(title), 내용(content)
+     * 파라미터: title(제목), writer(작성자), contents(내용), sort(정렬방식: latest/oldest)
      */
     @GetMapping({"/api/board", "/api/board/all", "/api/board/search"})
     @ResponseBody
     public ResponseEntity<List<BoardVO>> getBoards(
-            @RequestParam(value = "작성자", required = false) String writerKo,
-            @RequestParam(value = "writer", required = false) String writerEn,
-            @RequestParam(value = "username", required = false) String username,
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "writer", required = false) String writer,
+            @RequestParam(value = "contents", required = false) String contents,
+            @RequestParam(value = "sort", required = false) String sort,
+            @RequestParam(value = "order", required = false) String order,
+            @RequestParam(value = "content", required = false) String contentFallback,
+            @RequestParam(value = "username", required = false) String usernameFallback,
             @RequestParam(value = "제목", required = false) String titleKo,
-            @RequestParam(value = "title", required = false) String titleEn,
-            @RequestParam(value = "내용", required = false) String contentKo,
-            @RequestParam(value = "content", required = false) String contentEn) {
+            @RequestParam(value = "작성자", required = false) String writerKo,
+            @RequestParam(value = "내용", required = false) String contentKo) {
 
-        String writer = (writerKo != null && !writerKo.isBlank()) ? writerKo : ((writerEn != null && !writerEn.isBlank()) ? writerEn : username);
-        String title = (titleKo != null && !titleKo.isBlank()) ? titleKo : titleEn;
-        String content = (contentKo != null && !contentKo.isBlank()) ? contentKo : contentEn;
+        String titleParam = (title != null && !title.isBlank()) ? title : titleKo;
+        String writerParam = (writer != null && !writer.isBlank()) ? writer : ((usernameFallback != null && !usernameFallback.isBlank()) ? usernameFallback : writerKo);
+        String contentsParam = (contents != null && !contents.isBlank()) ? contents : ((contentFallback != null && !contentFallback.isBlank()) ? contentFallback : contentKo);
+        String sortParam = (sort != null && !sort.isBlank()) ? sort : order;
 
-        List<BoardVO> list = boardService.searchBoards(writer, title, content);
+        List<BoardVO> list = boardService.searchBoards(writerParam, titleParam, contentsParam, sortParam);
         return ResponseEntity.ok(list);
     }
 
