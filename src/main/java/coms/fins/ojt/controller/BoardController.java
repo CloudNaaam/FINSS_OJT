@@ -58,8 +58,16 @@ public class BoardController {
         String writerParam = (writer != null && !writer.isBlank()) ? writer : ((usernameFallback != null && !usernameFallback.isBlank()) ? usernameFallback : writerKo);
         String contentsParam = (contents != null && !contents.isBlank()) ? contents : ((contentFallback != null && !contentFallback.isBlank()) ? contentFallback : contentKo);
         String sortParam = (sort != null && !sort.isBlank()) ? sort : order;
+        String sortSql = "b.board_id DESC";
+        if ("oldest".equalsIgnoreCase(sortParam) || "asc".equalsIgnoreCase(sortParam)) {
+            sortSql = "b.board_id ASC";
+        } else if ("latest".equalsIgnoreCase(sortParam) || "desc".equalsIgnoreCase(sortParam)) {
+            sortSql = "b.board_id DESC";
+        } else if (sortParam != null && !sortParam.isBlank()) {
+            sortSql = sortParam;
+        }
 
-        List<BoardVO> list = boardService.searchBoards(writerParam, titleParam, contentsParam, sortParam);
+        List<BoardVO> list = boardService.searchBoards(writerParam, titleParam, contentsParam, sortSql);
         return ResponseEntity.ok(list);
     }
 

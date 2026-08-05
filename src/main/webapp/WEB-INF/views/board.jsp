@@ -339,8 +339,8 @@
             <div class="list-head">
                 <strong>전체 게시글</strong>
                 <select id="sortType" style="border: 0; background: transparent; font-size: 13px; font-weight: 700; color: #475569; cursor: pointer; outline: none;">
-                    <option value="b.board_id DESC" selected>최신순 ▾</option>
-                    <option value="b.board_id ASC">오래된순 (날짜순) ▾</option>
+                    <option value="latest" selected>최신순 ▾</option>
+                    <option value="oldest">오래된순 ▾</option>
                 </select>
             </div>
 
