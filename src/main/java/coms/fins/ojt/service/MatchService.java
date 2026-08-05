@@ -30,18 +30,32 @@ public class MatchService {
         return matchMapper.selectAllMatches();
     }
 
+    public List<MatchVO> searchMatches(Integer isEnd, String isGender, Integer level, String date, String evening) {
+        if (matchMapper == null) {
+            return List.of();
+        }
+        return matchMapper.selectMatchesWithFilter(isEnd, isGender, level, date, evening);
+    }
+
     public MatchVO getMatchById(Long matchId) {
         if (matchMapper == null || matchId == null) {
             return null;
         }
-        return matchMapper.selectMatchById(matchId);
+        try {
+            return matchMapper.selectMatchById(matchId);
+        } catch (Exception e) {
+            logger.error("DB 매치 단건 조회 중 예외 발생: matchId={}", matchId, e);
+            throw new RuntimeException("DB 조회 실패: " + e.getMessage(), e);
+        }
     }
 
-    public File compressAndGetHighlightVideo(Long matchId, String outputName) {
+    public File compressAndGetHighlightVideo(Long matchId, String outputName) throws Exception {
         MatchVO match = getMatchById(matchId);
-        if (match == null || match.getHighlightVideo() == null || match.getHighlightVideo().isBlank()) {
-            logger.warn("매치 하이라이트 영상 파일 정보 없음: matchId={}", matchId);
-            return null;
+        if (match == null) {
+            throw new IllegalArgumentException("해당 ID(" + matchId + ")의 매치 정보를 찾을 수 없습니다.");
+        }
+        if (match.getHighlightVideo() == null || match.getHighlightVideo().isBlank()) {
+            throw new IllegalArgumentException("해당 매치에 등록된 하이라이트 영상 파일 정보가 없습니다.");
         }
 
         String fileName = match.getHighlightVideo().trim(); // 예: 2026-08-01_highlight.mp4
@@ -67,7 +81,7 @@ public class MatchService {
 
         if (!rawFile.exists()) {
             logger.warn("원본 하이라이트 영상 파일이 uploads/highlights/ 폴더에 존재하지 않음: {}", fileName);
-            return null;
+            throw new java.io.FileNotFoundException("원본 하이라이트 영상 파일(" + fileName + ")이 서버 저장소에 존재하지 않습니다.");
         }
 
         logger.info("원본 영상 파일 탐색 성공: {}", rawFile.getAbsolutePath());
@@ -102,21 +116,10 @@ public class MatchService {
 
         try {
             // 4. ProcessBuilder 명령어 조립 및 실행
-            // 진짜 압축 명령어
-//            String command = "ffmpeg -i \"" + rawFile.getAbsolutePath() + "\""
-//                    + " -c:v libx264 -crf 26 -preset ultrafast -c:a aac -b:a 96k -y \""
-//                    + compressedFile.getAbsolutePath() + "\"";
+            String command = "ffmpeg -ss 00:00:00 -to 00:07:48 -i \""+ rawFile.getAbsolutePath() + "\" -c copy \"" + compressedFile.getAbsolutePath() + "\"";
 
-            // 가짜 압축 명령어 <-- VM 속도 이슈로 대체
-            String command = "ffmpeg -ss 00:00:00 -to 00:07:48 -i \""+ rawFile.getAbsolutePath() + "\""
-                    + "-c copy \"" + compressedFile.getAbsolutePath() + "\"";
-
-            // Linux (Ubuntu) 버전 (현재 활성화)
+            // Linux (Ubuntu) 버전
             Process process = new ProcessBuilder("/bin/bash", "-c", command).start();
-
-            // Windows 버전 (cmd.exe / powershell.exe 필요시 주석 해제하여 사용)
-//             Process process = new ProcessBuilder("cmd.exe", "/c", command).start();
-//             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
 
             boolean finished = process.waitFor(120, TimeUnit.SECONDS); // 최대 2분 대기
 
@@ -124,13 +127,14 @@ public class MatchService {
                 logger.info("FFmpeg 영상 압축 완료: matchId={}, compressedSize={}bytes", matchId, compressedFile.length());
                 return compressedFile;
             } else {
-                logger.warn("FFmpeg 압축 미완료 또는 실패 (원본 파일로 대체 반환): exitCode={}", finished ? process.exitValue() : "timeout");
-                return rawFile;
+                String errMsg = "FFmpeg 압축 프로세스 실패 (ExitCode: " + (finished ? process.exitValue() : "Timeout") + ")";
+                logger.warn(errMsg);
+                throw new RuntimeException(errMsg);
             }
 
         } catch (Exception e) {
-            logger.warn("FFmpeg 실행 환경 미구성 또는 오류 발생 (원본 파일 반환): error={}", e.getMessage());
-            return rawFile;
+            logger.error("FFmpeg 처리 중 오류 발생: ", e);
+            throw new RuntimeException("영상 압축 처리 실패: " + e.getMessage(), e);
         }
     }
 }

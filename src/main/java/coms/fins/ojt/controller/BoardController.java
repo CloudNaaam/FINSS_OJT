@@ -36,10 +36,26 @@ public class BoardController {
         return "board-detail";
     }
 
-    @GetMapping("/api/board/all")
+    /**
+     * 게시글 목록 및 검색 API (GET /api/board, /api/board/all, /api/board/search)
+     * 파라미터: 작성자(writer/username), 제목(title), 내용(content)
+     */
+    @GetMapping({"/api/board", "/api/board/all", "/api/board/search"})
     @ResponseBody
-    public ResponseEntity<List<BoardVO>> getAllBoards() {
-        List<BoardVO> list = boardService.getList();
+    public ResponseEntity<List<BoardVO>> getBoards(
+            @RequestParam(value = "작성자", required = false) String writerKo,
+            @RequestParam(value = "writer", required = false) String writerEn,
+            @RequestParam(value = "username", required = false) String username,
+            @RequestParam(value = "제목", required = false) String titleKo,
+            @RequestParam(value = "title", required = false) String titleEn,
+            @RequestParam(value = "내용", required = false) String contentKo,
+            @RequestParam(value = "content", required = false) String contentEn) {
+
+        String writer = (writerKo != null && !writerKo.isBlank()) ? writerKo : ((writerEn != null && !writerEn.isBlank()) ? writerEn : username);
+        String title = (titleKo != null && !titleKo.isBlank()) ? titleKo : titleEn;
+        String content = (contentKo != null && !contentKo.isBlank()) ? contentKo : contentEn;
+
+        List<BoardVO> list = boardService.searchBoards(writer, title, content);
         return ResponseEntity.ok(list);
     }
 

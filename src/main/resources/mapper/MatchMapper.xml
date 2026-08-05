@@ -14,12 +14,13 @@
             created_at      AS createdAt,
             match_level     AS matchLevel,
             gender,
-            num_members     AS numMembers
+            num_members     AS numMembers,
+            status
         FROM matches
         ORDER BY match_id DESC
     </select>
 
-    <select id="selectMatchById" resultType="coms.fins.ojt.domain.MatchVO">
+    <select id="selectMatchesWithFilter" resultType="coms.fins.ojt.domain.MatchVO">
         SELECT 
             match_id        AS matchId,
             field_name      AS fieldName,
@@ -30,7 +31,52 @@
             gender,
             num_members     AS numMembers
         FROM matches
-        WHERE match_id = #{matchId}
+        <where>
+            <if test="isEnd != null and isEnd == 1">
+                AND match_at >= SYSDATE
+            </if>
+            <if test="isGender != null and isGender != ''">
+                AND gender = #{isGender}
+            </if>
+            <if test="level != null">
+                AND match_level = #{level}
+            </if>
+            <if test="date != null and date != ''">
+                AND TRUNC(match_at) = TO_DATE(#{date}, 'YYYY-MM-DD')
+            </if>
+            <if test="evening != null and (evening == 'true' or evening == '1')">
+                AND EXTRACT(HOUR FROM match_at) BETWEEN 18 AND 23
+            </if>
+        </where>
+        ORDER BY match_at ASC, match_id DESC
+    </select>
+
+    <select id="selectMatchById" resultType="coms.fins.ojt.domain.MatchVO">
+        SELECT 
+            m.match_id        AS matchId,
+            m.field_name      AS fieldName,
+            m.highlight_video AS highlightVideo,
+            m.match_at        AS matchAt,
+            m.created_at      AS createdAt,
+            m.match_level     AS matchLevel,
+            m.gender,
+            m.num_members     AS numMembers,
+            g.address,
+            g.address_detail  AS addressDetail,
+            g.region,
+            g.size_info       AS sizeInfo,
+            g.is_indoor       AS isIndoor,
+            g.grass_type      AS grassType,
+            g.parking_type    AS parkingType,
+            g.has_shower      AS hasShower,
+            g.has_lights      AS hasLights,
+            g.has_shoes_rental AS hasShoesRental,
+            g.has_ball_rental  AS hasBallRental,
+            g.price_per_hour   AS pricePerHour,
+            g.notice
+        FROM matches m
+        LEFT JOIN ground g ON m.field_name = g.name
+        WHERE m.match_id = #{matchId}
     </select>
 
 </mapper>

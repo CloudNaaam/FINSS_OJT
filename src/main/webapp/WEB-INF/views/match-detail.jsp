@@ -372,6 +372,34 @@
             </div>
         </section>
 
+        <!-- 구장 상세 정보 섹션 (DB ground 테이블 연동) -->
+        <section class="section" id="groundSection">
+            <h2>🏟️ 구장 정보 & 시설</h2>
+            <div style="background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px;">
+                    <span style="font-size: 18px;">📍</span>
+                    <div>
+                        <strong style="font-size: 15px; color: var(--ink);" id="groundAddress">주소 정보 불러오는 중...</strong>
+                        <div style="font-size: 13px; color: var(--muted); margin-top: 2px;" id="groundRegion">--</div>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; border-top: 1px solid var(--line); padding-top: 12px;">
+                    <div><span style="color: var(--muted);">구장 크기:</span> <strong id="groundSize">--</strong></div>
+                    <div><span style="color: var(--muted);">잔디 종류:</span> <strong id="groundGrass">--</strong></div>
+                    <div><span style="color: var(--muted);">실내/실외:</span> <strong id="groundIndoor">--</strong></div>
+                    <div><span style="color: var(--muted);">이용 요금:</span> <strong id="groundPrice" style="color: var(--blue);">--</strong></div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;" id="groundAmenities">
+                <!-- 편의시설 태그 동적 삽입 -->
+            </div>
+
+            <div id="groundNoticeBox" style="display: none; background: #fffbe6; border: 1px solid #ffe58f; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #d46b08;">
+                <strong>📢 구장 안내사항:</strong> <span id="groundNotice"></span>
+            </div>
+        </section>
+
         <!-- 하이라이트 영상 섹션 -->
         <section class="section">
             <h2>매치 하이라이트 영상</h2>
@@ -473,8 +501,39 @@
                 genderTag.textContent = data.gender === "ANY" ? "남녀 모두" : (data.gender === "MALE" ? "남성" : "여성");
                 membersTag.textContent = "모집 " + (data.num_members || 12) + "명";
 
-                if (data.highlight_video) {
+                if (data.highlight_video && data.highlight_video.trim() !== "") {
                     videoFileName.textContent = data.highlight_video;
+                    var baseVideoName = data.highlight_video.replace(/\.[^/.]+$/, "");
+                    downloadFileName.value = baseVideoName;
+                } else {
+                    videoFileName.textContent = "하이라이트 영상 (미등록)";
+                }
+
+                // --- Ground DB 구장 정보 동적 바인딩 ---
+                var fullAddress = (data.address || "") + (data.address_detail ? " " + data.address_detail : "");
+                document.getElementById("groundAddress").textContent = fullAddress.trim() || (data.field_name ? data.field_name + " (상세 주소 미등록)" : "주소 정보 미등록");
+                document.getElementById("groundRegion").textContent = data.region ? "지역: " + data.region : "지역 정보 없음";
+                document.getElementById("groundSize").textContent = data.size_info || "40m x 20m (기본)";
+                document.getElementById("groundGrass").textContent = data.grass_type || "인조잔디";
+                document.getElementById("groundIndoor").textContent = (data.is_indoor === 1) ? "실내 구장" : "실외 구장";
+                document.getElementById("groundPrice").textContent = data.price_per_hour ? (Number(data.price_per_hour).toLocaleString() + "원 / 시간") : "시간당 100,000원";
+
+                // 편의시설 태그 바인딩
+                var amenitiesHtml = '';
+                if (data.parking_type === 1 || data.parking_type === 0) amenitiesHtml += '<span class="tag" style="background:#e0f2fe; color:#0369a1;">🅿️ 무료 주차 가능</span>';
+                if (data.has_shower === 1) amenitiesHtml += '<span class="tag" style="background:#f0fdf4; color:#15803d;">🚿 샤워실 완비</span>';
+                if (data.has_lights === 1) amenitiesHtml += '<span class="tag" style="background:#fefce8; color:#a16207;">💡 야간 조명 보유</span>';
+                if (data.has_shoes_rental === 1) amenitiesHtml += '<span class="tag" style="background:#fdf2f8; color:#be185d;">👟 풋살화 대여 가능</span>';
+                if (data.has_ball_rental === 1) amenitiesHtml += '<span class="tag" style="background:#f5f3ff; color:#6d28d9;">⚽ 풋살공 대여 가능</span>';
+                if (!amenitiesHtml) amenitiesHtml = '<span class="tag">기본 편의시설 제공</span>';
+
+                var amenitiesContainer = document.getElementById("groundAmenities");
+                if (amenitiesContainer) amenitiesContainer.innerHTML = amenitiesHtml;
+
+                // 구장 공지사항
+                if (data.notice && data.notice.trim() !== "") {
+                    document.getElementById("groundNotice").textContent = data.notice;
+                    document.getElementById("groundNoticeBox").style.display = "block";
                 }
             })
             .catch(function(err) {
@@ -499,8 +558,37 @@
         const finalFileName = safeName.toLowerCase().endsWith(".mp4") ? safeName : safeName + ".mp4";
         const encodedName = encodeURIComponent(finalFileName);
 
-        showToast(finalFileName + " 동적 압축 다운로드를 시작합니다...");
-        window.location.href = '/api/matches/' + matchId + '/highlight_download?output_name=' + encodedName;
+        showToast(finalFileName + " 영상 처리 및 다운로드를 진행 중입니다...");
+
+        const downloadUrl = '/api/matches/' + matchId + '/highlight_download?output_name=' + encodedName;
+
+        fetch(downloadUrl)
+            .then(function(res) {
+                const contentType = res.headers.get("content-type") || "";
+                if (contentType.includes("application/json")) {
+                    return res.json().then(function(data) {
+                        alert(data.error || "영상 처리 중 오류가 발생했습니다.");
+                    });
+                } else if (res.ok) {
+                    return res.blob().then(function(blob) {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = finalFileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                        showToast("영상 다운로드가 완료되었습니다.");
+                    });
+                } else {
+                    alert("영상 다운로드에 실패했습니다. (HTTP " + res.status + ")");
+                }
+            })
+            .catch(function(err) {
+                console.error("다운로드 요청 에러:", err);
+                alert("다운로드 요청 중 네트워크 오류가 발생했습니다: " + err.message);
+            });
     });
 
     // 매치 신청 버튼 클릭

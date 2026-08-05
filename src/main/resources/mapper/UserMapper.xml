@@ -14,6 +14,10 @@
         SELECT COUNT(*) FROM users WHERE username = #{username}
     </select>
 
+    <select id="findUsernameByUsername" resultType="string">
+        SELECT username FROM users WHERE username = #{username}
+    </select>
+
     <select id="findByUsername" resultType="coms.fins.ojt.domain.UserVO">
         SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, created_at
         FROM users

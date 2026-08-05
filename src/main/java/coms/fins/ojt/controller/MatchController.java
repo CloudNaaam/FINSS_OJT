@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,9 +23,19 @@ public class MatchController {
     @Autowired
     private MatchService matchService;
 
+    /**
+     * 매치 목록 조회 / 검색 API (/api/matches)
+     * 파라미터: is_end(마감여부), is_gender(성별), level(레벨), date(날짜), evening(저녁매치)
+     */
     @GetMapping
-    public ResponseEntity<List<MatchVO>> getAllMatches() {
-        List<MatchVO> matches = matchService.getAllMatches();
+    public ResponseEntity<List<MatchVO>> searchMatches(
+            @RequestParam(value = "is_end", required = false) Integer isEnd,
+            @RequestParam(value = "is_gender", required = false) String isGender,
+            @RequestParam(value = "level", required = false) Integer level,
+            @RequestParam(value = "date", required = false) String date,
+            @RequestParam(value = "evening", required = false) String evening) {
+
+        List<MatchVO> matches = matchService.searchMatches(isEnd, isGender, level, date, evening);
         return ResponseEntity.ok(matches);
     }
 
@@ -39,28 +50,35 @@ public class MatchController {
     }
 
     @GetMapping("/{matchId}/highlight_download")
-    public ResponseEntity<Resource> downloadHighlight(
+    public ResponseEntity<?> downloadHighlight(
             @PathVariable("matchId") Long matchId,
             @RequestParam(value = "output_name", required = false) String outputName) {
 
-        File videoFile = matchService.compressAndGetHighlightVideo(matchId, outputName);
+        try {
+            File videoFile = matchService.compressAndGetHighlightVideo(matchId, outputName);
 
-        if (videoFile == null || !videoFile.exists()) {
-            return ResponseEntity.notFound().build();
+            Resource resource = new FileSystemResource(videoFile);
+
+            String downloadName = (outputName != null && !outputName.isBlank()) ? outputName.trim() : videoFile.getName();
+            if (!downloadName.toLowerCase().endsWith(".mp4")) {
+                downloadName += ".mp4";
+            }
+
+            String encodedFilename = URLEncoder.encode(downloadName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("video/mp4"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFilename + "\"; filename*=UTF-8''" + encodedFilename)
+                    .body(resource);
+
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(MatchController.class).error("영상 하이라이트 다운로드 예외 발생: ", e);
+            java.util.Map<String, Object> errResp = new java.util.HashMap<>();
+            errResp.put("success", false);
+            errResp.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(errResp);
         }
-
-        Resource resource = new FileSystemResource(videoFile);
-
-        String downloadName = (outputName != null && !outputName.isBlank()) ? outputName.trim() : videoFile.getName();
-        if (!downloadName.toLowerCase().endsWith(".mp4")) {
-            downloadName += ".mp4";
-        }
-
-        String encodedFilename = URLEncoder.encode(downloadName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("video/mp4"))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFilename + "\"; filename*=UTF-8''" + encodedFilename)
-                .body(resource);
     }
 }

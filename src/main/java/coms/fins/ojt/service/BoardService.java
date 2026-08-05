@@ -34,6 +34,13 @@ public class BoardService {
         return boardMapper.getList();
     }
 
+    public List<BoardVO> searchBoards(String writer, String title, String content) {
+        if (boardMapper == null) {
+            return List.of();
+        }
+        return boardMapper.searchBoards(writer, title, content);
+    }
+
     public BoardDetailResponseVO getBoardDetail(Long boardId) {
         if (boardMapper == null || boardId == null) {
             return null;

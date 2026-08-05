@@ -277,9 +277,10 @@
         }
 
         .filter.active {
-            border-color: #24272d;
-            background: #24272d;
-            color: #fff;
+            border-color: var(--blue) !important;
+            background: var(--blue) !important;
+            color: #fff !important;
+            font-weight: 700;
         }
 
         /* 매치 목록 */
@@ -410,6 +411,166 @@
         .bottom-nav span { font-size: 22px; line-height: 1.1; }
         .bottom-nav a.active { color: var(--blue); font-weight: 700; }
 
+        /* 검색 모달 스타일 */
+        .search-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 60px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .search-modal-card {
+            width: min(90%, 540px);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .search-tab-bar {
+            display: flex;
+            padding: 16px 20px 0;
+            gap: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            background: #f8fafc;
+        }
+
+        .search-tab {
+            flex: 1;
+            padding: 12px 16px;
+            border: 0;
+            border-radius: 10px 10px 0 0;
+            background: transparent;
+            color: #64748b;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .search-tab.active {
+            background: #ffffff;
+            color: var(--blue);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03);
+            border-bottom: 2px solid var(--blue);
+        }
+
+        .search-input-box {
+            position: relative;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .search-input-box span.search-icon {
+            font-size: 18px;
+            color: #94a3b8;
+            margin-right: 10px;
+        }
+
+        .search-input {
+            width: 100%;
+            border: 0;
+            outline: 0;
+            font-size: 16px;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .search-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .btn-clear-search {
+            border: 0;
+            background: #e2e8f0;
+            color: #64748b;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .btn-close-search {
+            border: 0;
+            background: transparent;
+            color: #64748b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            margin-left: 8px;
+        }
+
+        .search-results-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            min-height: 200px;
+            max-height: 450px;
+        }
+
+        .search-result-item {
+            padding: 12px 14px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            margin-bottom: 8px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .search-result-item:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .search-item-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .search-item-sub {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         @media (max-width: 600px) {
             body { background: #fff; }
             .page { box-shadow: none; }
@@ -432,7 +593,7 @@
         <div class="header-main">
             <div class="brand">Finlab</div>
             <div class="header-actions">
-                <button class="icon-button" type="button" aria-label="검색">⌕</button>
+                <button class="icon-button" type="button" aria-label="검색" onclick="openSearchModal()">⌕</button>
                 <a class="icon-button" href="/gm" aria-label="구장 관리자 페이지">🏟️</a>
                 <a class="icon-button" href="/mypage" aria-label="마이페이지">👤</a>
             </div>
@@ -464,8 +625,9 @@
                     LocalDate date = today.plusDays(i);
                     int dayIndex = date.getDayOfWeek().getValue() - 1;
                     String dayClass = dayIndex == 5 ? "saturday" : dayIndex == 6 ? "sunday" : "";
+                    String dateStr = date.toString(); // YYYY-MM-DD
                 %>
-                <button class="date-card <%= i == 0 ? "active" : dayClass %>" type="button">
+                <button class="date-card <%= i == 0 ? "active" : dayClass %>" type="button" data-date="<%= dateStr %>">
                     <span><%= i == 0 ? "오늘" : dayNames[dayIndex] %></span>
                     <strong><%= date.getDayOfMonth() %></strong>
                 </button>
@@ -473,13 +635,25 @@
             </div>
         </section>
 
-        <section class="filter-area" aria-label="매치 필터">
-            <button class="filter" type="button">마감 가리기</button>
-            <button class="filter active" type="button">☾ 저녁 매치</button>
-            <button class="filter" type="button">혜택</button>
-            <button class="filter" type="button">성별 ▾</button>
-            <button class="filter" type="button">레벨 ▾</button>
-            <button class="filter" type="button">실내·그늘막</button>
+        <section class="filter-area" aria-label="매치 필터" style="display: flex; gap: 6px; align-items: center; overflow-x: auto;">
+            <button class="filter" id="filterHideEnd" type="button" onclick="toggleMatchFilter('is_end')">마감 가리기</button>
+            <button class="filter" id="filterEvening" type="button" onclick="toggleMatchFilter('evening')">☾ 저녁 매치</button>
+            
+            <select class="filter" id="filterGender" style="padding: 0 10px; height: 36px; cursor: pointer; outline: none;" onchange="changeMatchFilter('is_gender', this.value)">
+                <option value="">성별 전체 ▾</option>
+                <option value="ANY">남녀 모두 (ANY)</option>
+                <option value="MALE">남성 (MALE)</option>
+                <option value="FEMALE">여성 (FEMALE)</option>
+            </select>
+
+            <select class="filter" id="filterLevel" style="padding: 0 10px; height: 36px; cursor: pointer; outline: none;" onchange="changeMatchFilter('level', this.value)">
+                <option value="">레벨 전체 ▾</option>
+                <option value="1">레벨 1</option>
+                <option value="2">레벨 2</option>
+                <option value="3">레벨 3</option>
+                <option value="4">레벨 4</option>
+                <option value="5">레벨 5</option>
+            </select>
         </section>
 
         <section class="matches">
@@ -496,6 +670,31 @@
         <a href="/notice"><span>📢</span>공지</a>
         <a href="/mypage"><span>●</span>MY</a>
     </nav>
+</div>
+
+<!-- 검색 모달 (Match / Ground) -->
+<div class="search-modal-overlay" id="searchModal" onclick="handleSearchOverlayClick(event)">
+    <div class="search-modal-card" onclick="event.stopPropagation()">
+        <div class="search-tab-bar">
+            <button class="search-tab active" id="tabMatch" onclick="switchSearchTab('match')">
+                <span>⚽</span> 매치 검색
+            </button>
+            <button class="search-tab" id="tabGround" onclick="switchSearchTab('ground')">
+                <span>🏟️</span> 구장 검색
+            </button>
+        </div>
+        <div class="search-input-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" class="search-input" placeholder="구장명, 지역으로 매치 검색 (예: 강남, 서초)" oninput="handleSearchInput()">
+            <button class="btn-clear-search" id="btnSearchClear" onclick="clearSearchInput()">✕</button>
+            <button class="btn-close-search" onclick="closeSearchModal()">✕</button>
+        </div>
+        <div class="search-results-area" id="searchResultsArea">
+            <div style="padding: 40px 0; text-align: center; color: #94a3b8; font-size: 14px;">
+                검색어를 입력하시면 관련 매치 및 구장을 찾아드립니다.
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -516,33 +715,208 @@
         });
     });
 
-    function fetchMatches() {
-        fetch('/api/matches')
+    var allMatchesData = [];
+    var allGroundsData = null;
+    var currentSearchTab = 'match';
+
+    function openSearchModal() {
+        document.getElementById('searchModal').style.display = 'flex';
+        document.getElementById('searchInput').focus();
+        if (allGroundsData === null) {
+            fetchMyGroundsForSearch();
+        }
+    }
+
+    function closeSearchModal() {
+        document.getElementById('searchModal').style.display = 'none';
+    }
+
+    function handleSearchOverlayClick(e) {
+        if (e.target.id === 'searchModal') {
+            closeSearchModal();
+        }
+    }
+
+    function switchSearchTab(tab) {
+        currentSearchTab = tab;
+        var tabMatch = document.getElementById('tabMatch');
+        var tabGround = document.getElementById('tabGround');
+        var input = document.getElementById('searchInput');
+
+        if (tab === 'match') {
+            tabMatch.classList.add('active');
+            tabGround.classList.remove('active');
+            input.placeholder = "구장명, 지역으로 매치 검색 (예: 강남, 서초)";
+        } else {
+            tabGround.classList.add('active');
+            tabMatch.classList.remove('active');
+            input.placeholder = "구장 이름, 주소로 구장 검색 (예: 핀랩 풋살 파크)";
+        }
+        handleSearchInput();
+    }
+
+    function clearSearchInput() {
+        var input = document.getElementById('searchInput');
+        input.value = '';
+        document.getElementById('btnSearchClear').style.display = 'none';
+        handleSearchInput();
+        input.focus();
+    }
+
+    function fetchMyGroundsForSearch() {
+        fetch('/api/ground/my')
+            .then(function(res) {
+                if (!res.ok) return [];
+                return res.json();
+            })
+            .then(function(data) {
+                allGroundsData = data || [];
+            })
+            .catch(function(err) {
+                console.error('구장 목록 검색용 로드 오류:', err);
+                allGroundsData = [];
+            });
+    }
+
+    function handleSearchInput() {
+        var keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+        var clearBtn = document.getElementById('btnSearchClear');
+        clearBtn.style.display = keyword.length > 0 ? 'inline-flex' : 'none';
+
+        var resultsArea = document.getElementById('searchResultsArea');
+
+        if (!keyword) {
+            resultsArea.innerHTML = 
+                '<div style="padding: 40px 0; text-align: center; color: #94a3b8; font-size: 14px;">' +
+                    (currentSearchTab === 'match' ? '⚽ 검색어를 입력하시면 관련 소셜 매치를 찾아드립니다.' : '🏟️ 검색어를 입력하시면 구장을 찾아드립니다.') +
+                '</div>';
+            return;
+        }
+
+        if (currentSearchTab === 'match') {
+            var filteredMatches = allMatchesData.filter(function(m) {
+                var name = (m.field_name || '').toLowerCase();
+                return name.includes(keyword);
+            });
+
+            if (filteredMatches.length === 0) {
+                resultsArea.innerHTML = '<div style="padding: 40px 0; text-align: center; color: #94a3b8; font-size: 14px;">"<b>' + keyword + '</b>" 검색어와 일치하는 매치가 없습니다.</div>';
+                return;
+            }
+
+            var html = '';
+            filteredMatches.forEach(function(m) {
+                var timeStr = m.match_at ? m.match_at.substring(11, 16) : '19:00';
+                var genderStr = m.gender === 'ANY' ? '남녀 모두' : (m.gender === 'MALE' ? '남성' : '여성');
+
+                html += '<div class="search-result-item" onclick="location.href=\'/matches/' + (m.match_id || 1) + '\'">' +
+                            '<div>' +
+                                '<div class="search-item-title">⚽ ' + (m.field_name || '경기장') + '</div>' +
+                                '<div class="search-item-sub">⏰ ' + timeStr + ' · ' + genderStr + ' · 레벨 ' + (m.match_level || 5) + '</div>' +
+                            '</div>' +
+                            '<span style="font-size: 13px; font-weight: 700; color: var(--blue);">매치 보기 ›</span>' +
+                        '</div>';
+            });
+            resultsArea.innerHTML = html;
+
+        } else {
+            // 구장 검색 -> POST /api/search/ground XPath API 호출
+            resultsArea.innerHTML = '<div style="padding: 30px 0; text-align: center; color: #64748b; font-size: 14px;">🔍 XPath 로 구장 및 일정 데이터를 검색 중입니다...</div>';
+
+            var xmlPayload = '<?xml version="1.0" encoding="UTF-8"?><search><ground_name>' + keyword + '</ground_name></search>';
+
+            fetch('/api/search/ground', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/xml; charset=UTF-8'
+                },
+                body: xmlPayload
+            })
             .then(function(res) { return res.json(); })
             .then(function(data) {
+                if (!data.success || !data.grounds || data.grounds.length === 0) {
+                    resultsArea.innerHTML = '<div style="padding: 40px 0; text-align: center; color: #94a3b8; font-size: 14px;">"<b>' + keyword + '</b>" 검색어와 일치하는 구장이 없습니다.</div>';
+                    return;
+                }
+
+                var htmlG = '';
+                data.grounds.forEach(function(g) {
+                    var managerInfo = g.managerName ? ' (담당: ' + g.managerName + ')' : '';
+                    var scheduleInfo = g.scheduleCount ? ' · 9월 예약가능 ' + g.scheduleCount + '개 슬롯' : '';
+
+                    htmlG += '<div class="search-result-item" style="cursor: default;">' +
+                                '<div>' +
+                                    '<div class="search-item-title">🏟️ ' + (g.name || '구장') + ' <small style="color:#64748b; font-weight: normal;">[' + g.key + ']</small></div>' +
+                                    '<div class="search-item-sub">👤 관리자: ' + (g.managerName || '매니저') + scheduleInfo + '</div>' +
+                                '</div>' +
+                            '</div>';
+                });
+                resultsArea.innerHTML = htmlG;
+            })
+            .catch(function(err) {
+                console.error('XPath 구장 검색 실패:', err);
+                resultsArea.innerHTML = '<div style="padding: 40px 0; text-align: center; color: #ef4444; font-size: 14px;">구장 검색 중 오류가 발생했습니다.</div>';
+            });
+        }
+    }
+
+    var currentFilter = {
+        is_end: 0,
+        evening: null,
+        is_gender: null,
+        level: null,
+        date: null
+    };
+
+    function fetchMatches() {
+        var params = new URLSearchParams();
+        if (currentFilter.is_end === 1) params.append('is_end', '1');
+        if (currentFilter.evening) params.append('evening', currentFilter.evening);
+        if (currentFilter.is_gender) params.append('is_gender', currentFilter.is_gender);
+        if (currentFilter.level) params.append('level', currentFilter.level);
+        if (currentFilter.date) params.append('date', currentFilter.date);
+
+        var queryString = params.toString();
+        var url = '/api/matches' + (queryString ? '?' + queryString : '');
+        console.log('[fetchMatches] API 호출:', url, '필터상태:', currentFilter);
+
+        fetch(url)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                allMatchesData = data || [];
+                console.log('[fetchMatches] 수신 데이터 건수:', allMatchesData.length);
                 var container = document.getElementById('match-list-container');
                 if (!container) return;
                 if (!data || data.length === 0) {
-                    container.innerHTML = '<p style="padding: 20px 0; color: #888; text-align: center;">등록된 매치가 없습니다.</p>';
+                    container.innerHTML = '<p style="padding: 30px 0; color: #888; text-align: center;">조건에 맞는 등록된 매치가 없습니다.</p>';
                     return;
                 }
                 var html = '';
                 data.forEach(function(m) {
-                    var timeStr = m.match_at ? m.match_at.substring(11, 16) : '19:00';
-                    var genderStr = m.gender === 'ANY' ? '남녀 모두' : (m.gender === 'MALE' ? '남성' : '여성');
-                    var photoUrl = m.field_photo || 'https://i.namu.wiki/i/lQIGadGVZtfkSOOba-BOK0J0NpytK5Ur9E3phQeFThfpxuDNKv0c0-rdFmNw5F6fOehk0-kFKCGrDFOeD51S9A.webp';
-                    html += '<article class="match-card" style="cursor: pointer;" onclick="location.href=\'/matches/' + (m.match_id || 1) + '\'">' +
+                    var matchId = m.matchId || m.match_id || 1;
+                    var fieldName = m.fieldName || m.field_name || '경기장';
+                    var matchAt = m.matchAt || m.match_at || '';
+                    var timeStr = matchAt ? matchAt.substring(11, 16) : '19:00';
+                    var gender = m.gender || 'ANY';
+                    var genderStr = gender === 'ANY' ? '남녀 모두' : (gender === 'MALE' ? '남성' : '여성');
+                    var matchLevel = m.matchLevel || m.match_level || 5;
+                    var numMembers = m.numMembers || m.num_members || 12;
+                    var statusStr = (m.status === 'CLOSED') ? '마감됨' : '신청 가능';
+                    var statusClass = (m.status === 'CLOSED') ? 'status closed' : 'status';
+                    var photoUrl = 'https://i.namu.wiki/i/lQIGadGVZtfkSOOba-BOK0J0NpytK5Ur9E3phQeFThfpxuDNKv0c0-rdFmNw5F6fOehk0-kFKCGrDFOeD51S9A.webp';
+
+                    html += '<article class="match-card" style="cursor: pointer;" onclick="location.href=\'/matches/' + matchId + '\'">' +
                                 '<div class="time">' + timeStr + '<small>120분</small></div>' +
                                 '<div style="flex: 1;">' +
-                                    '<h3 class="match-title">' + (m.field_name || '경기장') + '</h3>' +
-                                    '<p class="match-meta">' + genderStr + ' · 레벨 ' + (m.match_level || 5) + ' · 모집 ' + (m.num_members || 12) + '명</p>' +
+                                    '<h3 class="match-title">' + fieldName + '</h3>' +
+                                    '<p class="match-meta">' + genderStr + ' · 레벨 ' + matchLevel + ' · 모집 ' + numMembers + '명</p>' +
                                     '<div class="tags">' +
                                         '<span class="tag beginner">모든 레벨</span>' +
                                         '<span class="tag">풋살화</span>' +
                                     '</div>' +
                                 '</div>' +
                                 '<img src="' + photoUrl + '" alt="경기장" style="width: 76px; height: 56px; object-fit: cover; border-radius: 8px; margin: 0 10px;">' +
-                                '<button class="status" type="button" onclick="event.stopPropagation(); location.href=\'/matches/' + (m.match_id || 1) + '\'">신청 가능</button>' +
+                                '<button class="' + statusClass + '" type="button" onclick="event.stopPropagation(); location.href=\'/matches/' + matchId + '\'">' + statusStr + '</button>' +
                             '</article>';
                 });
                 container.innerHTML = html;
@@ -552,7 +926,74 @@
             });
     }
 
-    document.addEventListener('DOMContentLoaded', fetchMatches);
+    document.addEventListener('DOMContentLoaded', function() {
+        // 날짜 카드 선택 이벤트
+        var dateCards = document.querySelectorAll(".date-card");
+        if (dateCards.length > 0) {
+            currentFilter.date = dateCards[0].dataset.date || null;
+            dateCards.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    dateCards.forEach(function (item) { item.classList.remove("active"); });
+                    button.classList.add("active");
+                    currentFilter.date = button.dataset.date || null;
+                    fetchMatches();
+                });
+            });
+        }
+
+        // 필터 버튼 및 드롭다운 이벤트
+        var filterHideEnd = document.getElementById("filterHideEnd");
+        if (filterHideEnd) {
+            filterHideEnd.addEventListener("click", function() {
+                this.classList.toggle("active");
+                currentFilter.is_end = this.classList.contains("active") ? 1 : 0;
+                fetchMatches();
+            });
+        }
+
+    function toggleMatchFilter(type) {
+        if (type === 'is_end') {
+            var btn = document.getElementById("filterHideEnd");
+            if (btn) {
+                btn.classList.toggle("active");
+                currentFilter.is_end = btn.classList.contains("active") ? 1 : 0;
+            }
+        } else if (type === 'evening') {
+            var btn = document.getElementById("filterEvening");
+            if (btn) {
+                btn.classList.toggle("active");
+                currentFilter.evening = btn.classList.contains("active") ? 'true' : null;
+            }
+        }
+        fetchMatches();
+    }
+
+    function changeMatchFilter(type, value) {
+        var selectElem = document.getElementById(type === 'is_gender' ? 'filterGender' : 'filterLevel');
+        if (selectElem) {
+            if (value) {
+                selectElem.classList.add("active");
+            } else {
+                selectElem.classList.remove("active");
+            }
+        }
+
+        if (type === 'is_gender') {
+            currentFilter.is_gender = value || null;
+        } else if (type === 'level') {
+            currentFilter.level = value || null;
+        }
+        fetchMatches();
+    }
+
+        fetchMatches();
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSearchModal();
+            }
+        });
+    });
 </script>
 </body>
 </html>

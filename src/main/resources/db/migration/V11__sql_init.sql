@@ -16,7 +16,7 @@ CREATE TABLE users (
 
     CONSTRAINT pk_users PRIMARY KEY (user_id),
     CONSTRAINT uq_users_username UNIQUE (username),
-    CONSTRAINT ck_users_is_admin CHECK (is_admin IN (0, 1)),
+    CONSTRAINT ck_users_is_admin CHE1CK (is_admin IN (0, 1)),
     CONSTRAINT ck_users_is_manager CHECK (is_manager IN (0, 1))
 );
 

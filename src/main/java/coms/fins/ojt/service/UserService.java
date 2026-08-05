@@ -25,6 +25,17 @@ public class UserService {
     @Autowired(required = false)
     private EmailVerificationMapper emailVerificationMapper;
 
+    /**
+     * 아이디 중복 여부 확인 (SELECT username FROM users WHERE username = #{username})
+     */
+    public boolean checkUsernameDuplicate(String username) {
+        if (username == null || username.trim().isEmpty() || userMapper == null) {
+            return false;
+        }
+        String found = userMapper.findUsernameByUsername(username.trim());
+        return found != null && !found.isBlank();
+    }
+
     @Transactional
     public boolean registerUser(UserVO user) {
         if (user == null || user.getUsername() == null || user.getUsername().isBlank()

@@ -7,6 +7,8 @@ import coms.fins.ojt.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,13 +16,19 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -33,6 +41,9 @@ public class GroundController {
 
     @Autowired
     private UserService userService;
+
+    @Value("${admin.base.path:C:/Users/FINS/uploads}")
+    private String adminBasePath;
 
     /**
      * 신규 구장 등록 API (/api/ground/add 및 /api/gm/add 호환)
@@ -188,6 +199,128 @@ public class GroundController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(vo);
+    }
+
+    /**
+     * XML 기반 XPath 구장 검색 API (/api/search/ground)
+     * POST 요청으로 <ground_name> 검색어 수신
+     * XPath 쿼리를 사용해 ground_schedules.xml에서 일치하는 구장 목록 추출
+     */
+    @PostMapping(value = "/api/search/ground", consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE, MediaType.ALL_VALUE})
+    public ResponseEntity<Map<String, Object>> searchGroundByXPath(@RequestBody(required = false) String xmlData) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            String groundNameKeyword = "";
+            if (xmlData != null && !xmlData.trim().isEmpty()) {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
+                factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+                factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                ByteArrayInputStream input = new ByteArrayInputStream(xmlData.getBytes(StandardCharsets.UTF_8));
+                Document reqDoc = builder.parse(input);
+                Element root = reqDoc.getDocumentElement();
+
+                // <ground_name> 태그 또는 <name> 태그 파싱
+                groundNameKeyword = getTagValue(root, "ground_name");
+                if (groundNameKeyword == null || groundNameKeyword.isBlank()) {
+                    groundNameKeyword = getTagValue(root, "name");
+                }
+                if (groundNameKeyword == null) {
+                    groundNameKeyword = "";
+                }
+            }
+
+            // application.properties의 admin.base.path 디렉토리에서 XML 파일 로드
+            InputStream is = null;
+            java.io.File fileInAdminPath = new java.io.File(adminBasePath, "ground_schedules.xml");
+            if (!fileInAdminPath.exists()) {
+                fileInAdminPath = new java.io.File(adminBasePath, "xml/ground_schedules.xml");
+            }
+
+            if (fileInAdminPath.exists()) {
+                is = new java.io.FileInputStream(fileInAdminPath);
+                logger.info("admin.base.path 파일 경로({})에서 XML 로드 완료", fileInAdminPath.getAbsolutePath());
+            } else {
+                // 폴백: Classpath 자원 로드
+                ClassPathResource resource = new ClassPathResource("xml/ground_schedules.xml");
+                if (resource.exists()) {
+                    is = resource.getInputStream();
+                    logger.info("Classpath(xml/ground_schedules.xml) 자원에서 XML 로드 완료");
+                }
+            }
+
+            if (is == null) {
+                response.put("success", false);
+                response.put("message", "XML 파일을 찾을 수 없습니다. (" + adminBasePath + " 내 ground_schedules.xml 확인 필요)");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document targetDoc = db.parse(is);
+            targetDoc.getDocumentElement().normalize();
+
+            // XPath 쿼리 표현식 구성
+            XPathFactory xPathFactory = XPathFactory.newInstance();
+            XPath xpath = xPathFactory.newXPath();
+
+            String xpathExpression;
+            if (!groundNameKeyword.isBlank()) {
+                // ground_name 검색어와 부분 일치하는 ground 노드 추출 XPath 쿼리
+                xpathExpression = "//ground[contains(name, '" + groundNameKeyword.trim() + "')]";
+            } else {
+                xpathExpression = "//ground";
+            }
+
+            logger.info("수행할 XPath 표현식: {}", xpathExpression);
+
+            NodeList groundNodes = (NodeList) xpath.evaluate(xpathExpression, targetDoc, XPathConstants.NODESET);
+
+            List<Map<String, Object>> resultList = new ArrayList<>();
+            for (int i = 0; i < groundNodes.getLength(); i++) {
+                Element groundElem = (Element) groundNodes.item(i);
+                Map<String, Object> item = new HashMap<>();
+                item.put("key", groundElem.getAttribute("key"));
+                item.put("managerId", groundElem.getAttribute("managerId"));
+                item.put("managerName", groundElem.getAttribute("managerName"));
+                item.put("name", getTagValue(groundElem, "name"));
+
+                // 일정 정보 매핑
+                NodeList scheduleNodes = groundElem.getElementsByTagName("schedule");
+                item.put("scheduleCount", scheduleNodes.getLength());
+
+                List<Map<String, String>> schedules = new ArrayList<>();
+                for (int j = 0; j < Math.min(scheduleNodes.getLength(), 5); j++) {
+                    Element sElem = (Element) scheduleNodes.item(j);
+                    Map<String, String> sMap = new HashMap<>();
+                    sMap.put("date", sElem.getAttribute("date"));
+                    sMap.put("start", sElem.getAttribute("start"));
+                    sMap.put("end", sElem.getAttribute("end"));
+                    sMap.put("status", sElem.getAttribute("status"));
+                    schedules.add(sMap);
+                }
+                item.put("sampleSchedules", schedules);
+
+                resultList.add(item);
+            }
+
+            response.put("success", true);
+            response.put("xpath_query", xpathExpression);
+            response.put("keyword", groundNameKeyword);
+            response.put("count", resultList.size());
+            response.put("grounds", resultList);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("XPath 구장 검색 처리 중 예외 발생: ", e);
+            response.put("success", false);
+            response.put("message", "XPath 구장 검색 처리 실패: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     private Long parseUserIdCookie(String userIdCookie) {

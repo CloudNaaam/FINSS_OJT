@@ -16,6 +16,36 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
+    /**
+     * 아이디 중복 체크 API (/api/auth/dup)
+     * POST 요청: {"id": "입력ID"}
+     * 응답: {"duplicate": true} 또는 {"duplicate": false}
+     */
+    @PostMapping("/dup")
+    public ResponseEntity<Map<String, Boolean>> checkDuplicate(
+            @RequestBody(required = false) Map<String, String> requestBody,
+            @RequestParam(value = "id", required = false) String paramId) {
+
+        Map<String, Boolean> response = new HashMap<>();
+
+        String targetId = null;
+        if (requestBody != null && requestBody.containsKey("id")) {
+            targetId = requestBody.get("id");
+        } else if (paramId != null) {
+            targetId = paramId;
+        }
+
+        if (targetId == null || targetId.trim().isEmpty()) {
+            response.put("duplicate", false);
+            return ResponseEntity.ok(response);
+        }
+
+        boolean isDuplicate = userService.checkUsernameDuplicate(targetId.trim());
+        response.put("duplicate", isDuplicate);
+
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@RequestBody UserVO user) {
         Map<String, String> response = new HashMap<>();

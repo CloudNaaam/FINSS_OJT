@@ -458,6 +458,55 @@
         return matched;
     }
 
+    const btnCheckUsername = document.getElementById("btnCheckUsername");
+    let isUsernameChecked = false;
+
+    // 아이디 중복 확인 연동 (/api/auth/dup POST)
+    btnCheckUsername.addEventListener("click", function() {
+        const usernameVal = username.value.trim();
+        if (!usernameVal) {
+            alert("아이디를 입력해 주세요.");
+            username.focus();
+            return;
+        }
+
+        if (usernameVal.length < 4 || usernameVal.length > 20) {
+            usernameHelp.textContent = "아이디는 영문, 숫자 4~20자 사이여야 합니다.";
+            usernameHelp.className = "help error";
+            return;
+        }
+
+        fetch("/api/auth/dup", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ id: usernameVal })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.duplicate) {
+                usernameHelp.textContent = "❌ 이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.";
+                usernameHelp.className = "help error";
+                isUsernameChecked = false;
+            } else {
+                usernameHelp.textContent = "✅ 사용 가능한 아이디입니다.";
+                usernameHelp.className = "help success";
+                isUsernameChecked = true;
+            }
+        })
+        .catch(function(err) {
+            console.error("아이디 중복 확인 오류:", err);
+            alert("아이디 중복 확인 처리 중 오류가 발생했습니다.");
+        });
+    });
+
+    username.addEventListener("input", function() {
+        isUsernameChecked = false;
+        usernameHelp.textContent = "로그인에 사용할 아이디를 입력해 주세요.";
+        usernameHelp.className = "help";
+    });
+
     password.addEventListener("input", function() {
         validatePasswordFormat();
         checkPasswordConfirm();
@@ -483,6 +532,12 @@
         if (!username.value.trim()) {
             alert("아이디를 입력해 주세요.");
             username.focus();
+            return;
+        }
+
+        if (!isUsernameChecked) {
+            alert("아이디 중복 확인을 진행해 주세요.");
+            btnCheckUsername.focus();
             return;
         }
 

@@ -3,12 +3,18 @@ package coms.fins.ojt.mapper;
 import coms.fins.ojt.domain.BoardDetailResponseVO;
 import coms.fins.ojt.domain.BoardVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
 @Mapper
 public interface BoardMapper {
     List<BoardVO> getList();
+    List<BoardVO> searchBoards(
+            @Param("writer") String writer,
+            @Param("title") String title,
+            @Param("content") String content
+    );
     void insert(BoardVO board);
     BoardVO read(Long boardId);
     BoardDetailResponseVO selectBoardDetailById(Long boardId);

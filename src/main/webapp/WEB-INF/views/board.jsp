@@ -321,13 +321,17 @@
     <main>
         <section class="board-head">
             <h1>게시판</h1>
-            <p>풋살을 좋아하는 사람들과 자유롭게 이야기해보세요.</p>
         </section>
 
-        <section class="toolbar">
-            <label class="search">
+        <section class="toolbar" style="display: flex; gap: 8px; align-items: center;">
+            <select id="searchType" style="padding: 0 12px; height: 48px; border: 1px solid var(--line); border-radius: 12px; background: #f8fafc; font-weight: 600; color: #334155; cursor: pointer; font-size: 14px; outline: none;">
+                <option value="title" selected>제목</option>
+                <option value="writer">작성자</option>
+                <option value="content">내용</option>
+            </select>
+            <label class="search" style="flex: 1;">
                 <span>⌕</span>
-                <input id="postSearch" type="search" placeholder="게시글을 검색해보세요">
+                <input id="postSearch" type="search" placeholder="검색어를 입력해보세요">
             </label>
         </section>
 
@@ -348,8 +352,8 @@
     <nav class="bottom-nav" aria-label="하단 메뉴">
         <a href="/"><span>⚽</span>매치</a>
         <a class="active" href="/board"><span>📋</span>게시판</a>
-        <a href="/notice"><span>📢</span>공지</a>
-        <a href="/mypage"><span>●</span>MY</a>
+        <a href="/notice"><span>📢</span>공지사항</a>
+        <a href="/mypage"><span>👤</span>마이페이지</a>
     </nav>
 </div>
 
@@ -357,7 +361,24 @@
     var allPostsData = [];
 
     function fetchBoardPosts() {
-        fetch('/api/board/all')
+        var searchTypeSelect = document.getElementById('searchType');
+        var searchInput = document.getElementById('postSearch');
+
+        var type = searchTypeSelect ? searchTypeSelect.value : 'title';
+        var keyword = searchInput ? searchInput.value.trim() : '';
+
+        var url = '/api/board';
+        if (keyword) {
+            if (type === 'writer') {
+                url += '?작성자=' + encodeURIComponent(keyword);
+            } else if (type === 'content') {
+                url += '?내용=' + encodeURIComponent(keyword);
+            } else {
+                url += '?제목=' + encodeURIComponent(keyword);
+            }
+        }
+
+        fetch(url)
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 allPostsData = data || [];
@@ -377,14 +398,14 @@
         if (!container) return;
 
         if (!posts || posts.length === 0) {
-            container.innerHTML = '<li style="padding: 40px 0; text-align: center; color: #888;">등록된 게시글이 없습니다.</li>';
+            container.innerHTML = '<li style="padding: 40px 0; text-align: center; color: #888;">검색 조건에 맞는 게시글이 없습니다.</li>';
             return;
         }
 
         var html = '';
         posts.forEach(function(post) {
             var dateStr = post.created_at ? post.created_at.substring(0, 10) : '';
-            var boardId = post.board_id || '';
+            var boardId = post.board_id || post.boardId || '';
             var fileClip = (post.file_uuid && post.file_uuid.trim() !== '') ? ' <span style="font-size: 13px; margin-left: 4px; color: #666;" title="첨부파일 있음">📎</span>' : '';
             var writerName = post.writer || ('사용자#' + (post.writer_id || 1));
 
@@ -404,20 +425,25 @@
         container.innerHTML = html;
     }
 
-    var searchInput = document.getElementById('postSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            var keyword = searchInput.value.trim().toLowerCase();
-            var filtered = allPostsData.filter(function(post) {
-                var titleMatch = post.title && post.title.toLowerCase().includes(keyword);
-                var contentMatch = post.content && post.content.toLowerCase().includes(keyword);
-                return titleMatch || contentMatch;
-            });
-            renderPosts(filtered);
-        });
-    }
 
-    document.addEventListener('DOMContentLoaded', fetchBoardPosts);
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchBoardPosts();
+
+        var searchInput = document.getElementById('postSearch');
+        var searchTypeSelect = document.getElementById('searchType');
+
+        var searchTimer = null;
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(fetchBoardPosts, 300);
+            });
+        }
+
+        if (searchTypeSelect) {
+            searchTypeSelect.addEventListener('change', fetchBoardPosts);
+        }
+    });
 </script>
 </body>
 </html>

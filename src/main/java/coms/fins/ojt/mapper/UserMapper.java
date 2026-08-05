@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 public interface UserMapper {
     int insertUser(UserVO user);
     int checkUsernameExists(@Param("username") String username);
+    String findUsernameByUsername(@Param("username") String username);
     UserVO findByUsername(@Param("username") String username);
     UserVO selectUserById(@Param("userId") Long userId);
     int loginRaw(@Param("username") String username, @Param("password") String password);
