@@ -219,6 +219,24 @@ public class GroundController {
         return ResponseEntity.ok(vo);
     }
 
+    // 2. XPath Injection 규칙
+    private static final java.util.List<java.util.regex.Pattern> XPATH_PATTERNS = java.util.List.of(
+            java.util.regex.Pattern.compile("['\"]\\s*(or|and)\\s*['\"]", java.util.regex.Pattern.CASE_INSENSITIVE),
+            java.util.regex.Pattern.compile("1\\s*=\\s*1|'1'\\s*=\\s*'1'|\\|\\|", java.util.regex.Pattern.CASE_INSENSITIVE)
+    );
+
+    private boolean isXPathInjection(String input) {
+        if (input == null || input.isBlank()) {
+            return false;
+        }
+        for (java.util.regex.Pattern pattern : XPATH_PATTERNS) {
+            if (pattern.matcher(input).find()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * XML 기반 XPath 구장 검색 API (/api/search/ground)
      * POST 요청으로 <ground_name> 검색어 수신
@@ -227,6 +245,13 @@ public class GroundController {
     @PostMapping(value = "/api/search/ground", consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE, MediaType.ALL_VALUE})
     public ResponseEntity<Map<String, Object>> searchGroundByXPath(@RequestBody(required = false) String xmlData) {
         Map<String, Object> response = new HashMap<>();
+
+        if (isXPathInjection(xmlData)) {
+            logger.warn("XPath 구장 검색 실패: XPath Injection 공격 패턴이 감지되었습니다.");
+            response.put("success", false);
+            response.put("message", "XPath Injection 패턴이 감지되었습니다.");
+            return ResponseEntity.ok(response);
+        }
 
         try {
             String groundNameKeyword = "";
