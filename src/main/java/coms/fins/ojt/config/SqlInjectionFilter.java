@@ -17,11 +17,10 @@ public class SqlInjectionFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(SqlInjectionFilter.class);
 
-    // 1. SQL Injection: UNION SELECT, OR 1=1, 주석(--, /*), Time-based sleep
+    // 1. SQL Injection: UNION SELECT, OR 1=1, Time-based sleep (주석 --, /* 감지 제외)
     private static final List<Pattern> SQL_INJECTION_PATTERNS = List.of(
             Pattern.compile("union\\s+select", Pattern.CASE_INSENSITIVE),
             Pattern.compile("or\\s+['\"]?1['\"]?\\s*=\\s*['\"]?1", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("--|/\\*", Pattern.CASE_INSENSITIVE),
             Pattern.compile("sleep\\s*\\(|benchmark\\s*\\(", Pattern.CASE_INSENSITIVE)
     );
 
