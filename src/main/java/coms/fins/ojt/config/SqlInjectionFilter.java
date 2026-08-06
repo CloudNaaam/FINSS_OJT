@@ -36,6 +36,13 @@ public class SqlInjectionFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
+        // /api/search/ground 경로 검사 제외 (XPath WAF 전용 엔드포인트)
+        String requestURI = httpRequest.getRequestURI();
+        if (requestURI != null && requestURI.contains("/api/search/ground")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         // 1. URL Query Parameter 및 Form Parameter 검사
         Map<String, String[]> paramMap = httpRequest.getParameterMap();
         for (Map.Entry<String, String[]> entry : paramMap.entrySet()) {
