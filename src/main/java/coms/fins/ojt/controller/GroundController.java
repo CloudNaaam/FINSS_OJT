@@ -242,10 +242,12 @@ public class GroundController {
      * GET 요청 (Query Parameter: name) 및 기존 POST XML 요청 호환
      * 응답: XML 데이터 (<response><success>true</success><grounds>...</grounds></response>)
      */
-    @RequestMapping(value = "/api/search/ground", method = {RequestMethod.GET, RequestMethod.POST}, produces = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE})
+    @RequestMapping(value = "/api/search/ground", method = {RequestMethod.GET, RequestMethod.POST}, produces = "application/xml;charset=UTF-8")
     public ResponseEntity<String> searchGroundByXPath(
             @RequestParam(value = "name", required = false) String name,
             @RequestBody(required = false) String xmlData) {
+
+        MediaType xmlUtf8 = MediaType.parseMediaType("application/xml;charset=UTF-8");
 
         String groundNameKeyword = "";
         if (name != null && !name.isBlank()) {
@@ -257,7 +259,7 @@ public class GroundController {
         if (isXPathInjection(groundNameKeyword) || isXPathInjection(xmlData)) {
             logger.warn("XPath 구장 검색 실패: XPath Injection 공격 패턴이 감지되었습니다.");
             String errXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><success>false</success><message>XPath Injection 패턴이 감지되었습니다.</message></response>";
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(errXml);
+            return ResponseEntity.ok().contentType(xmlUtf8).body(errXml);
         }
 
         try {
@@ -282,12 +284,13 @@ public class GroundController {
 
             if (is == null) {
                 String errXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><success>false</success><message>ground_schedules.xml 파일이 존재하지 않습니다.</message></response>";
-                return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(errXml);
+                return ResponseEntity.ok().contentType(xmlUtf8).body(errXml);
             }
 
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
-            Document targetDoc = db.parse(is);
+            org.xml.sax.InputSource inputSource = new org.xml.sax.InputSource(new java.io.InputStreamReader(is, StandardCharsets.UTF_8));
+            Document targetDoc = db.parse(inputSource);
             targetDoc.getDocumentElement().normalize();
 
             // XPath 쿼리 표현식 구성
@@ -334,12 +337,12 @@ public class GroundController {
             sb.append("</grounds>");
             sb.append("</response>");
 
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(sb.toString());
+            return ResponseEntity.ok().contentType(xmlUtf8).body(sb.toString());
 
         } catch (Exception e) {
             logger.error("XPath 구장 검색 처리 중 예외 발생: ", e);
             String errXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><success>false</success><message>구장 검색 중 오류가 발생했습니다.</message></response>";
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(errXml);
+            return ResponseEntity.ok().contentType(xmlUtf8).body(errXml);
         }
     }
 
