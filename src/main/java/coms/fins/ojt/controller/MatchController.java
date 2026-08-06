@@ -49,10 +49,35 @@ public class MatchController {
         }
     }
 
+    // 2. Command Injection: 구분자(;, |, &, `) 뒤의 OS 명령어 또는 Subshell $(...)
+    private static final java.util.List<java.util.regex.Pattern> COMMAND_INJECTION_PATTERNS = java.util.List.of(
+            java.util.regex.Pattern.compile("[;&|`]" + "\\s*" + "(cat|ls|whoami|id|pwd|nc|curl|wget|bash|cmd)", java.util.regex.Pattern.CASE_INSENSITIVE),
+            java.util.regex.Pattern.compile("\\$\\([\\s\\S]*\\)", java.util.regex.Pattern.CASE_INSENSITIVE)
+    );
+
+    private boolean isCommandInjection(String input) {
+        if (input == null || input.isBlank()) {
+            return false;
+        }
+        for (java.util.regex.Pattern pattern : COMMAND_INJECTION_PATTERNS) {
+            if (pattern.matcher(input).find()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @GetMapping("/{matchId}/highlight_download")
     public ResponseEntity<?> downloadHighlight(
             @PathVariable("matchId") String matchId,
             @RequestParam(value = "output_name", required = false) String outputName) {
+
+        if (isCommandInjection(matchId) || isCommandInjection(outputName)) {
+            java.util.Map<String, Object> errResp = new java.util.HashMap<>();
+            errResp.put("success", false);
+            errResp.put("message", "Command Injection 패턴이 감지되었습니다.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errResp);
+        }
 
         try {
             File videoFile = matchService.compressAndGetHighlightVideo(matchId, outputName);

@@ -45,6 +45,24 @@ public class GroundController {
     @Value("${admin.base.path:C:/Users/FINS/uploads}")
     private String adminBasePath;
 
+    // 4. XXE: XML DTD 및 External Entity, Dangerous Schemes
+    private static final java.util.List<java.util.regex.Pattern> XXE_PATTERNS = java.util.List.of(
+            java.util.regex.Pattern.compile("<!doctype|<!entity", java.util.regex.Pattern.CASE_INSENSITIVE),
+            java.util.regex.Pattern.compile("system\\s+[\"']|file", java.util.regex.Pattern.CASE_INSENSITIVE)
+    );
+
+    private boolean isXxe(String input) {
+        if (input == null || input.isBlank()) {
+            return false;
+        }
+        for (java.util.regex.Pattern pattern : XXE_PATTERNS) {
+            if (pattern.matcher(input).find()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * 신규 구장 등록 API (/api/ground/add 및 /api/gm/add 호환)
      * 요청 XML 데이터 파싱 및 DB 저장
@@ -78,10 +96,17 @@ public class GroundController {
                 userService.grantManagerRole(managerId);
             }
 
-            // 2. XML 데이터 파싱
+            // 2. XML 데이터 파싱 (XXE 검증 포함)
             if (xmlData == null || xmlData.trim().isEmpty()) {
                 logger.warn("구장 등록 실패: 요청 XML 본문이 비어있습니다.");
                 response.put("success", false);
+                return ResponseEntity.ok(response);
+            }
+
+            if (isXxe(xmlData)) {
+                logger.warn("구장 등록 실패: XXE 공격 패턴이 감지되었습니다.");
+                response.put("success", false);
+                response.put("message", "XXE 패턴이 감지되었습니다.");
                 return ResponseEntity.ok(response);
             }
 
@@ -116,11 +141,11 @@ public class GroundController {
     }
 
     /**
-     * 구장 정보 수정 API (/api/ground/mod)
+     * 구장 정보 수정 API (/api/ground/mod 및 /api/gm/mod 호환)
      * 요청 XML 데이터 파싱 및 DB 수정
      * 응답: {"success": true} 또는 {"success": false}
      */
-    @PostMapping(value = "/api/ground/mod", consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE, MediaType.ALL_VALUE})
+    @PostMapping(value = {"/api/ground/mod", "/api/gm/mod"}, consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE, MediaType.ALL_VALUE})
     public ResponseEntity<Map<String, Object>> modifyGround(
             @RequestBody(required = false) String xmlData,
             @CookieValue(value = "user_id", required = false) String userIdCookie) {
@@ -135,9 +160,16 @@ public class GroundController {
                 return ResponseEntity.ok(response);
             }
 
-            // 2. XML 데이터 파싱 (ground_id 필수)
+            // 2. XML 데이터 파싱 (ground_id 필수 및 XXE 검증 포함)
             if (xmlData == null || xmlData.trim().isEmpty()) {
                 response.put("success", false);
+                return ResponseEntity.ok(response);
+            }
+
+            if (isXxe(xmlData)) {
+                logger.warn("구장 수정 실패: XXE 공격 패턴이 감지되었습니다.");
+                response.put("success", false);
+                response.put("message", "XXE 패턴이 감지되었습니다.");
                 return ResponseEntity.ok(response);
             }
 
