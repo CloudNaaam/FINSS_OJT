@@ -58,7 +58,10 @@ public class MatchService {
             throw new IllegalArgumentException("해당 매치에 등록된 하이라이트 영상 파일 정보가 없습니다.");
         }
 
-        String fileName = match.getHighlightVideo().trim(); // 예: 2026-08-01_highlight.mp4
+        String fileName = match.getHighlightVideo().trim();
+        if ("SONNY.mp4".equalsIgnoreCase(fileName)) {
+            fileName = "HIGHLIGH_OF_THE_MATCH.mp4";
+        }
 
         // 1. 원본 파일 탐색 (ServletContext realPath -> 프로젝트 절대 경로 -> 상대 경로)
         File rawFile = null;

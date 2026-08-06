@@ -911,34 +911,49 @@
         } else {
             resultsArea.innerHTML = '<div style="padding: 30px 0; text-align: center; color: #64748b; font-size: 14px;">🔍 XPath 로 구장 및 일정 데이터를 검색 중입니다...</div>';
 
-            var xmlPayload = '<?xml version="1.0" encoding="UTF-8"?><search><ground_name>' + keyword + '</ground_name></search>';
-
-            fetch('/api/search/ground', {
-                method: 'POST',
+            fetch('/api/search/ground?name=' + encodeURIComponent(keyword), {
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/xml; charset=UTF-8'
-                },
-                body: xmlPayload
+                    'Accept': 'application/xml, text/xml'
+                }
             })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success || !data.grounds || data.grounds.length === 0) {
+            .then(function(res) { return res.text(); })
+            .then(function(xmlStr) {
+                var parser = new DOMParser();
+                var xmlDoc = parser.parseFromString(xmlStr, "text/xml");
+                var successNode = xmlDoc.getElementsByTagName("success")[0];
+                var isSuccess = successNode && successNode.textContent === "true";
+
+                var msgNode = xmlDoc.getElementsByTagName("message")[0];
+                if (msgNode) {
+                    resultsArea.innerHTML = '<div style="padding: 40px 0; text-align: center; color: #ef4444; font-size: 14px;">' + msgNode.textContent + '</div>';
+                    return;
+                }
+
+                var groundNodes = xmlDoc.getElementsByTagName("ground");
+                if (!isSuccess || groundNodes.length === 0) {
                     resultsArea.innerHTML = '<div style="padding: 40px 0; text-align: center; color: #94a3b8; font-size: 14px;">"<b>' + keyword + '</b>" 검색어와 일치하는 구장이 없습니다.</div>';
                     return;
                 }
 
                 var htmlG = '';
-                data.grounds.forEach(function(g) {
-                    var managerInfo = g.managerName ? ' (담당: ' + g.managerName + ')' : '';
-                    var scheduleInfo = g.scheduleCount ? ' · 9월 예약가능 ' + g.scheduleCount + '개 슬롯' : '';
+                for (var i = 0; i < groundNodes.length; i++) {
+                    var gNode = groundNodes[i];
+                    var key = gNode.getAttribute("key") || "";
+                    var managerName = gNode.getAttribute("managerName") || "매니저";
+                    var gNameNode = gNode.getElementsByTagName("name")[0];
+                    var gName = gNameNode ? gNameNode.textContent : "구장";
+                    var schedNode = gNode.getElementsByTagName("scheduleCount")[0];
+                    var schedCount = schedNode ? schedNode.textContent : "0";
+                    var scheduleInfo = ' · 예약가능 ' + schedCount + '개 슬롯';
 
                     htmlG += '<div class="search-result-item" style="cursor: default;">' +
                                 '<div>' +
-                                    '<div class="search-item-title">🏟️ ' + (g.name || '구장') + ' <small style="color:#64748b; font-weight: normal;">[' + g.key + ']</small></div>' +
-                                    '<div class="search-item-sub">👤 관리자: ' + (g.managerName || '매니저') + scheduleInfo + '</div>' +
+                                    '<div class="search-item-title">🏟️ ' + gName + ' <small style="color:#64748b; font-weight: normal;">[' + key + ']</small></div>' +
+                                    '<div class="search-item-sub">👤 관리자: ' + managerName + scheduleInfo + '</div>' +
                                 '</div>' +
                             '</div>';
-                });
+                }
                 resultsArea.innerHTML = htmlG;
             })
             .catch(function(err) {

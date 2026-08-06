@@ -239,43 +239,28 @@ public class GroundController {
 
     /**
      * XML 기반 XPath 구장 검색 API (/api/search/ground)
-     * POST 요청으로 <ground_name> 검색어 수신
-     * XPath 쿼리를 사용해 ground_schedules.xml에서 일치하는 구장 목록 추출
+     * GET 요청 (Query Parameter: name) 및 기존 POST XML 요청 호환
+     * 응답: XML 데이터 (<response><success>true</success><grounds>...</grounds></response>)
      */
-    @PostMapping(value = "/api/search/ground", consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE, MediaType.ALL_VALUE})
-    public ResponseEntity<Map<String, Object>> searchGroundByXPath(@RequestBody(required = false) String xmlData) {
-        Map<String, Object> response = new HashMap<>();
+    @RequestMapping(value = "/api/search/ground", method = {RequestMethod.GET, RequestMethod.POST}, produces = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE})
+    public ResponseEntity<String> searchGroundByXPath(
+            @RequestParam(value = "name", required = false) String name,
+            @RequestBody(required = false) String xmlData) {
 
-        if (isXPathInjection(xmlData)) {
+        String groundNameKeyword = "";
+        if (name != null && !name.isBlank()) {
+            groundNameKeyword = name.trim();
+        } else if (xmlData != null && !xmlData.trim().isEmpty()) {
+            groundNameKeyword = parseKeywordFromXml(xmlData);
+        }
+
+        if (isXPathInjection(groundNameKeyword) || isXPathInjection(xmlData)) {
             logger.warn("XPath 구장 검색 실패: XPath Injection 공격 패턴이 감지되었습니다.");
-            response.put("success", false);
-            response.put("message", "XPath Injection 패턴이 감지되었습니다.");
-            return ResponseEntity.ok(response);
+            String errXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><success>false</success><message>XPath Injection 패턴이 감지되었습니다.</message></response>";
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(errXml);
         }
 
         try {
-            String groundNameKeyword = "";
-            if (xmlData != null && !xmlData.trim().isEmpty()) {
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
-                factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-                factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-
-                DocumentBuilder builder = factory.newDocumentBuilder();
-                ByteArrayInputStream input = new ByteArrayInputStream(xmlData.getBytes(StandardCharsets.UTF_8));
-                Document reqDoc = builder.parse(input);
-                Element root = reqDoc.getDocumentElement();
-
-                // <ground_name> 태그 또는 <name> 태그 파싱
-                groundNameKeyword = getTagValue(root, "ground_name");
-                if (groundNameKeyword == null || groundNameKeyword.isBlank()) {
-                    groundNameKeyword = getTagValue(root, "name");
-                }
-                if (groundNameKeyword == null) {
-                    groundNameKeyword = "";
-                }
-            }
-
             // application.properties의 admin.base.path 디렉토리에서 XML 파일 로드
             InputStream is = null;
             java.io.File fileInAdminPath = new java.io.File(adminBasePath, "ground_schedules.xml");
@@ -296,9 +281,8 @@ public class GroundController {
             }
 
             if (is == null) {
-                Map<String, Object> errResp = new HashMap<>();
-                errResp.put("success", false);
-                return ResponseEntity.ok(errResp);
+                String errXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><success>false</success><message>ground_schedules.xml 파일이 존재하지 않습니다.</message></response>";
+                return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(errXml);
             }
 
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -322,47 +306,40 @@ public class GroundController {
 
             NodeList groundNodes = (NodeList) xpath.evaluate(xpathExpression, targetDoc, XPathConstants.NODESET);
 
-            List<Map<String, Object>> resultList = new ArrayList<>();
+            StringBuilder sb = new StringBuilder();
+            sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            sb.append("<response>");
+            sb.append("<success>true</success>");
+            sb.append("<xpath_query>").append(escapeXml(xpathExpression)).append("</xpath_query>");
+            sb.append("<keyword>").append(escapeXml(groundNameKeyword)).append("</keyword>");
+            sb.append("<count>").append(groundNodes.getLength()).append("</count>");
+            sb.append("<grounds>");
+
             for (int i = 0; i < groundNodes.getLength(); i++) {
                 Element groundElem = (Element) groundNodes.item(i);
-                Map<String, Object> item = new HashMap<>();
-                item.put("key", groundElem.getAttribute("key"));
-                item.put("managerId", groundElem.getAttribute("managerId"));
-                item.put("managerName", groundElem.getAttribute("managerName"));
-                item.put("name", getTagValue(groundElem, "name"));
-
-                // 일정 정보 매핑
+                String key = groundElem.getAttribute("key");
+                String managerId = groundElem.getAttribute("managerId");
+                String managerName = groundElem.getAttribute("managerName");
+                String gName = getTagValue(groundElem, "name");
                 NodeList scheduleNodes = groundElem.getElementsByTagName("schedule");
-                item.put("scheduleCount", scheduleNodes.getLength());
 
-                List<Map<String, String>> schedules = new ArrayList<>();
-                for (int j = 0; j < Math.min(scheduleNodes.getLength(), 5); j++) {
-                    Element sElem = (Element) scheduleNodes.item(j);
-                    Map<String, String> sMap = new HashMap<>();
-                    sMap.put("date", sElem.getAttribute("date"));
-                    sMap.put("start", sElem.getAttribute("start"));
-                    sMap.put("end", sElem.getAttribute("end"));
-                    sMap.put("status", sElem.getAttribute("status"));
-                    schedules.add(sMap);
-                }
-                item.put("sampleSchedules", schedules);
-
-                resultList.add(item);
+                sb.append("<ground key=\"").append(escapeXml(key))
+                  .append("\" managerId=\"").append(escapeXml(managerId))
+                  .append("\" managerName=\"").append(escapeXml(managerName)).append("\">");
+                sb.append("<name>").append(escapeXml(gName != null ? gName : "")).append("</name>");
+                sb.append("<scheduleCount>").append(scheduleNodes.getLength()).append("</scheduleCount>");
+                sb.append("</ground>");
             }
 
-            response.put("success", true);
-            response.put("xpath_query", xpathExpression);
-            response.put("keyword", groundNameKeyword);
-            response.put("count", resultList.size());
-            response.put("grounds", resultList);
+            sb.append("</grounds>");
+            sb.append("</response>");
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(sb.toString());
 
         } catch (Exception e) {
             logger.error("XPath 구장 검색 처리 중 예외 발생: ", e);
-            Map<String, Object> errResp = new HashMap<>();
-            errResp.put("success", false);
-            return ResponseEntity.ok(errResp);
+            String errXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><success>false</success><message>구장 검색 중 오류가 발생했습니다.</message></response>";
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(errXml);
         }
     }
 
@@ -465,6 +442,28 @@ public class GroundController {
             return Long.parseLong(value.trim());
         } catch (NumberFormatException e) {
             return defaultValue;
+        }
+    }
+
+    private String parseKeywordFromXml(String xmlData) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            ByteArrayInputStream input = new ByteArrayInputStream(xmlData.getBytes(StandardCharsets.UTF_8));
+            Document reqDoc = builder.parse(input);
+            Element root = reqDoc.getDocumentElement();
+
+            String val = getTagValue(root, "ground_name");
+            if (val == null || val.isBlank()) {
+                val = getTagValue(root, "name");
+            }
+            return val != null ? val.trim() : "";
+        } catch (Exception e) {
+            return "";
         }
     }
 }

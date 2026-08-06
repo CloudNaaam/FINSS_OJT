@@ -498,8 +498,12 @@
                 membersTag.textContent = "모집 " + (data.num_members || 12) + "명";
 
                 if (data.highlight_video && data.highlight_video.trim() !== "") {
-                    videoFileName.textContent = data.highlight_video;
-                    var baseVideoName = data.highlight_video.replace(/\.[^/.]+$/, "");
+                    var highlightName = data.highlight_video.trim();
+                    if (highlightName === "SONNY.mp4") {
+                        highlightName = "HIGHLIGH_OF_THE_MATCH.mp4";
+                    }
+                    videoFileName.textContent = highlightName;
+                    var baseVideoName = highlightName.replace(/\.[^/.]+$/, "");
                     downloadFileName.value = baseVideoName;
                 } else {
                     videoFileName.textContent = "하이라이트 영상 (미등록)";
