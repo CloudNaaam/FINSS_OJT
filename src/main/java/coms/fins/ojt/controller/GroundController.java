@@ -466,4 +466,15 @@ public class GroundController {
             return "";
         }
     }
+
+    private String escapeXml(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;")
+                    .replace("'", "&apos;");
+    }
 }
