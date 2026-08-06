@@ -45,24 +45,6 @@ public class GroundController {
     @Value("${admin.base.path:C:/Users/FINS/uploads}")
     private String adminBasePath;
 
-    // 4. XXE: XML DTD 및 External Entity, Dangerous Schemes
-    private static final java.util.List<java.util.regex.Pattern> XXE_PATTERNS = java.util.List.of(
-            java.util.regex.Pattern.compile("<!doctype|<!entity", java.util.regex.Pattern.CASE_INSENSITIVE),
-            java.util.regex.Pattern.compile("system\\s+[\"']|file", java.util.regex.Pattern.CASE_INSENSITIVE)
-    );
-
-    private boolean isXxe(String input) {
-        if (input == null || input.isBlank()) {
-            return false;
-        }
-        for (java.util.regex.Pattern pattern : XXE_PATTERNS) {
-            if (pattern.matcher(input).find()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * 신규 구장 등록 API (/api/ground/add 및 /api/gm/add 호환)
      * 요청 XML 데이터 파싱 및 DB 저장
@@ -96,17 +78,10 @@ public class GroundController {
                 userService.grantManagerRole(managerId);
             }
 
-            // 2. XML 데이터 파싱 (XXE 검증 포함)
+            // 2. XML 데이터 파싱
             if (xmlData == null || xmlData.trim().isEmpty()) {
                 logger.warn("구장 등록 실패: 요청 XML 본문이 비어있습니다.");
                 response.put("success", false);
-                return ResponseEntity.ok(response);
-            }
-
-            if (isXxe(xmlData)) {
-                logger.warn("구장 등록 실패: XXE 공격 패턴이 감지되었습니다.");
-                response.put("success", false);
-                response.put("message", "XXE 패턴이 감지되었습니다.");
                 return ResponseEntity.ok(response);
             }
 
@@ -160,16 +135,9 @@ public class GroundController {
                 return ResponseEntity.ok(response);
             }
 
-            // 2. XML 데이터 파싱 (ground_id 필수 및 XXE 검증 포함)
+            // 2. XML 데이터 파싱 (ground_id 필수)
             if (xmlData == null || xmlData.trim().isEmpty()) {
                 response.put("success", false);
-                return ResponseEntity.ok(response);
-            }
-
-            if (isXxe(xmlData)) {
-                logger.warn("구장 수정 실패: XXE 공격 패턴이 감지되었습니다.");
-                response.put("success", false);
-                response.put("message", "XXE 패턴이 감지되었습니다.");
                 return ResponseEntity.ok(response);
             }
 
@@ -313,7 +281,6 @@ public class GroundController {
             sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             sb.append("<response>");
             sb.append("<success>true</success>");
-            sb.append("<xpath_query>").append(escapeXml(xpathExpression)).append("</xpath_query>");
             sb.append("<keyword>").append(escapeXml(groundNameKeyword)).append("</keyword>");
             sb.append("<count>").append(groundNodes.getLength()).append("</count>");
             sb.append("<grounds>");
@@ -362,11 +329,15 @@ public class GroundController {
         ground.setManagerId(managerId);
 
         try {
+            if (xmlData != null) {
+                xmlData = fixEncodingIfNeeded(xmlData);
+            }
+
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             // 기본값: false (DOCTYPE 선언 허용)
             factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
             // 기본값: false (일반 외부 엔티티 참조 허용)
-            factory.setFeature("http://xml.org/sax/features/external-general-entities", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
             // 기본값: false (파라미터 외부 엔티티 참조 허용)
             factory.setFeature("http://xml.org/sax/features/external-parameter-entities", true);
             // 기본값: false (XInclude 처리 비활성화)
@@ -375,8 +346,8 @@ public class GroundController {
             factory.setExpandEntityReferences(true);
 
             DocumentBuilder builder = factory.newDocumentBuilder();
-            ByteArrayInputStream input = new ByteArrayInputStream(xmlData.getBytes(StandardCharsets.UTF_8));
-            Document doc = builder.parse(input);
+            org.xml.sax.InputSource inputSource = new org.xml.sax.InputSource(new java.io.InputStreamReader(new ByteArrayInputStream(xmlData.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8));
+            Document doc = builder.parse(inputSource);
             doc.getDocumentElement().normalize();
 
             Element root = doc.getDocumentElement();
@@ -479,5 +450,26 @@ public class GroundController {
                     .replace(">", "&gt;")
                     .replace("\"", "&quot;")
                     .replace("'", "&apos;");
+    }
+
+    private String fixEncodingIfNeeded(String text) {
+        if (text == null || text.isBlank()) {
+            return text;
+        }
+        for (char c : text.toCharArray()) {
+            if (c >= '가' && c <= '힣') {
+                return text;
+            }
+        }
+        try {
+            byte[] bytes = text.getBytes(StandardCharsets.ISO_8859_1);
+            String decoded = new String(bytes, StandardCharsets.UTF_8);
+            for (char c : decoded.toCharArray()) {
+                if (c >= '가' && c <= '힣') {
+                    return decoded;
+                }
+            }
+        } catch (Exception ignored) {}
+        return text;
     }
 }
