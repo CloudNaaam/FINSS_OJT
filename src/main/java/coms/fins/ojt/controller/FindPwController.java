@@ -15,35 +15,11 @@ public class FindPwController {
     @Autowired
     private UserService userService;
 
-    // 1. SSTI (Thymeleaf / SpEL) 규칙
-    private static final java.util.List<java.util.regex.Pattern> SSTI_PATTERNS = java.util.List.of(
-            java.util.regex.Pattern.compile("\\$\\{[\\s\\S]*?\\}", java.util.regex.Pattern.CASE_INSENSITIVE),
-            java.util.regex.Pattern.compile("getruntime|processbuilder|exec\\s*\\(", java.util.regex.Pattern.CASE_INSENSITIVE)
-    );
-
-    private boolean isSsti(String input) {
-        if (input == null || input.isBlank()) {
-            return false;
-        }
-        for (java.util.regex.Pattern pattern : SSTI_PATTERNS) {
-            if (pattern.matcher(input).find()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @PostMapping("/match")
     public ResponseEntity<Map<String, Object>> match(@RequestBody(required = false) Map<String, String> requestData) {
         Map<String, Object> response = new HashMap<>();
         String username = requestData != null ? requestData.get("username") : null;
         String email = requestData != null ? requestData.get("email") : null;
-
-        if (isSsti(username) || isSsti(email)) {
-            response.put("success", false);
-            response.put("message", "SSTI 패턴이 감지되었습니다.");
-            return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).body(response);
-        }
 
         if (email != null && !email.isBlank()) {
             userService.checkMatchUsernameAndEmail(username, email);
@@ -61,12 +37,6 @@ public class FindPwController {
         if (requestData != null) {
             String username = requestData.get("username");
             String email = requestData.get("email");
-
-            if (isSsti(username) || isSsti(email)) {
-                response.put("success", false);
-                response.put("message", "SSTI 패턴이 감지되었습니다.");
-                return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).body(response);
-            }
 
             if (email != null && !email.isBlank()) {
                 userService.checkMatchUsernameAndEmail(username, email);
