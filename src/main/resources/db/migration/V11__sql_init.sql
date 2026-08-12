@@ -12,11 +12,12 @@ CREATE TABLE users (
     is_admin       NUMBER(1) DEFAULT 0 NOT NULL,
     is_manager     NUMBER(1) DEFAULT 0 NOT NULL,
     profile_img    VARCHAR2(300 CHAR) DEFAULT NULL,
+    penalty_until  TIMESTAMP NULL,
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
     CONSTRAINT pk_users PRIMARY KEY (user_id),
     CONSTRAINT uq_users_username UNIQUE (username),
-    CONSTRAINT ck_users_is_admin CHE1CK (is_admin IN (0, 1)),
+    CONSTRAINT ck_users_is_admin CHECK (is_admin IN (0, 1)),
     CONSTRAINT ck_users_is_manager CHECK (is_manager IN (0, 1))
 );
 

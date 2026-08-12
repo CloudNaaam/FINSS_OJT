@@ -29,4 +29,8 @@
         DELETE FROM board WHERE board_id = #{boardId}
     </delete>
 
+    <select id="selectTotalBoardCount" resultType="int">
+        SELECT COUNT(*) FROM board
+    </select>
+
 </mapper>

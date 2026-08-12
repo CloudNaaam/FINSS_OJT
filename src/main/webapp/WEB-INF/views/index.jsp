@@ -411,6 +411,25 @@
         .bottom-nav span { font-size: 22px; line-height: 1.1; }
         .bottom-nav a.active { color: var(--blue); font-weight: 700; }
 
+        /* 푸터 영역 */
+        .site-footer {
+            padding: 24px 24px 96px;
+            background: #f8fafc;
+            border-top: 1px solid var(--line);
+            text-align: center;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .site-footer a {
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .site-footer a:hover {
+            color: var(--blue);
+            text-decoration: underline;
+        }
+
         /* 검색 모달 스타일 */
         .search-modal-overlay {
             position: fixed;
@@ -667,6 +686,13 @@
                 <!-- 동적 매치 데이터가 삽입됩니다 -->
             </div>
         </section>
+
+        <footer class="site-footer">
+            <div style="margin-bottom: 8px;">
+                <a href="/rules">이용약관</a>
+            </div>
+            <p style="margin: 0; font-size: 12px; color: #94a3b8;">© Finlab Football. All rights reserved.</p>
+        </footer>
     </main>
 
     <nav class="bottom-nav" aria-label="하단 메뉴">

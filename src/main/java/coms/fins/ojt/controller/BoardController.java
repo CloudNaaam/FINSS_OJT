@@ -43,6 +43,7 @@ public class BoardController {
     @GetMapping({"/api/board", "/api/board/all", "/api/board/search"})
     @ResponseBody
     public ResponseEntity<List<BoardVO>> getBoards(
+            @RequestParam(value = "q", required = false) String query,
             @RequestParam(value = "title", required = false) String title,
             @RequestParam(value = "writer", required = false) String writer,
             @RequestParam(value = "contents", required = false) String contents,
@@ -54,7 +55,7 @@ public class BoardController {
             @RequestParam(value = "작성자", required = false) String writerKo,
             @RequestParam(value = "내용", required = false) String contentKo) {
 
-        String titleParam = (title != null && !title.isBlank()) ? title : titleKo;
+        String titleParam = (query != null && !query.isBlank()) ? query : ((title != null && !title.isBlank()) ? title : titleKo);
         String writerParam = (writer != null && !writer.isBlank()) ? writer : ((usernameFallback != null && !usernameFallback.isBlank()) ? usernameFallback : writerKo);
         String contentsParam = (contents != null && !contents.isBlank()) ? contents : ((contentFallback != null && !contentFallback.isBlank()) ? contentFallback : contentKo);
         String sortParam = (sort != null && !sort.isBlank()) ? sort : order;

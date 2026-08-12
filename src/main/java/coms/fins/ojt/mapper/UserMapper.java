@@ -17,4 +17,8 @@ public interface UserMapper {
     Long findUserIdByUsernameAndEmail(@Param("username") String username, @Param("email") String email);
     String findUsernameByEmail(@Param("email") String email);
     int updatePasswordByUsernameAndEmail(@Param("username") String username, @Param("email") String email, @Param("newPassword") String newPassword);
+    java.util.List<UserVO> searchUsers(@Param("keyword") String keyword);
+    int updateUserPenalty(@Param("userId") Long userId, @Param("penaltyUntil") java.util.Date penaltyUntil);
+    int selectTotalUserCount();
+    int selectPenalizedUserCount();
 }

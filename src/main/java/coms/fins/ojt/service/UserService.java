@@ -252,4 +252,16 @@ public class UserService {
             return false;
         }
     }
+
+    public java.util.List<UserVO> searchUsers(String keyword) {
+        if (keyword == null || keyword.isBlank() || userMapper == null) {
+            return java.util.Collections.emptyList();
+        }
+        try {
+            return userMapper.searchUsers(keyword.trim());
+        } catch (Exception e) {
+            logger.error("유저 검색 중 예외 발생: ", e);
+            return java.util.Collections.emptyList();
+        }
+    }
 }

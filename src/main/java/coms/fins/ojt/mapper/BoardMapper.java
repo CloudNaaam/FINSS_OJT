@@ -20,4 +20,5 @@ public interface BoardMapper {
     BoardVO read(Long boardId);
     BoardDetailResponseVO selectBoardDetailById(Long boardId);
     int deleteBoard(Long boardId);
+    int selectTotalBoardCount();
 }

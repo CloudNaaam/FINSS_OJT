@@ -125,11 +125,22 @@ public class UserVO {
         this.profileImg = profileImg;
     }
 
+    @JsonProperty("penalty_until")
+    private Date penaltyUntil;
+
     public Date getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Date getPenaltyUntil() {
+        return penaltyUntil;
+    }
+
+    public void setPenaltyUntil(Date penaltyUntil) {
+        this.penaltyUntil = penaltyUntil;
     }
 }

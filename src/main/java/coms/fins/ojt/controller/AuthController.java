@@ -74,6 +74,17 @@ public class AuthController {
         UserVO user = userService.loginUser(username, password);
 
         if (user != null) {
+            // 페널티 만료일 유효성 체크 (현재 시간보다 미래인 경우 이용 제한)
+            if (user.getPenaltyUntil() != null && user.getPenaltyUntil().after(new java.util.Date())) {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy.MM.dd");
+                String formattedDate = sdf.format(user.getPenaltyUntil());
+                String message = "현재 이용 제한 상태입니다! (" + formattedDate + "까지)";
+
+                result.put("success", false);
+                result.put("message", message);
+                return ResponseEntity.ok(result);
+            }
+
             jakarta.servlet.http.Cookie userCookie = new jakarta.servlet.http.Cookie("user_id", String.valueOf(user.getUserId()));
             userCookie.setPath("/");
             userCookie.setMaxAge(60 * 60 * 24 * 7); // 7일 유지
@@ -84,6 +95,7 @@ public class AuthController {
             return ResponseEntity.ok(result);
         } else {
             result.put("success", false);
+            result.put("message", "아이디 또는 비밀번호가 올바르지 않습니다.");
             return ResponseEntity.ok(result);
         }
     }
@@ -137,5 +149,19 @@ public class AuthController {
             response.put("message", "인증 코드가 올바르지 않거나 만료되었습니다.");
         }
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 10분 유효기간 CSRF 토큰 발급 API (GET /api/auth/csrf 또는 GET /api/csrf)
+     */
+    @GetMapping({"/csrf", "/api/csrf"})
+    public ResponseEntity<Map<String, Object>> getCsrfToken() {
+        String token = coms.fins.ojt.util.CsrfTokenManager.generateToken();
+        Map<String, Object> result = new HashMap<>();
+        result.put("csrf_token", token);
+        result.put("param_name", "csrfToken");
+        result.put("expires_in_seconds", 600); // 10분 = 600초
+        result.put("message", "CSRF 토큰이 발급되었습니다. (10분 유효, Form param: csrfToken)");
+        return ResponseEntity.ok(result);
     }
 }

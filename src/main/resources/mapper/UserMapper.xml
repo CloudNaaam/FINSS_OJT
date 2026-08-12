@@ -22,11 +22,11 @@
     </select>
 
     <select id="findByUsername" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, created_at FROM users WHERE username = '${username}'
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil FROM users WHERE username = '${username}'
     </select>
 
     <select id="selectUserById" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at FROM users WHERE user_id = #{userId}
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil FROM users WHERE user_id = #{userId}
     </select>
 
     <!-- Raw Query 로그인 (PreparedStatement 미사용, ${} 가공되지 않은 문자열 매핑 사용) -->
@@ -49,5 +49,23 @@
     <update id="updatePasswordByUsernameAndEmail">
         UPDATE users SET password = #{newPassword} WHERE username = #{username} AND email = #{email}
     </update>
+
+    <select id="searchUsers" resultType="coms.fins.ojt.domain.UserVO">
+        SELECT user_id AS userId, username, name, email, phone_number AS phoneNumber, is_admin AS isAdmin, is_manager AS isManager, created_at AS createdAt, penalty_until AS penaltyUntil
+        FROM users
+        WHERE username LIKE '%' || '${keyword}' || '%' OR name LIKE '%' || '${keyword}' || '%' OR email LIKE '%' || '${keyword}' || '%'
+    </select>
+
+    <update id="updateUserPenalty">
+        UPDATE users SET penalty_until = #{penaltyUntil, jdbcType=TIMESTAMP} WHERE user_id = #{userId}
+    </update>
+
+    <select id="selectTotalUserCount" resultType="int">
+        SELECT COUNT(*) FROM users
+    </select>
+
+    <select id="selectPenalizedUserCount" resultType="int">
+        SELECT COUNT(*) FROM users WHERE penalty_until IS NOT NULL AND penalty_until > CURRENT_TIMESTAMP
+    </select>
 
 </mapper>

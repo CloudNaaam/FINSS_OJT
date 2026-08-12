@@ -513,7 +513,7 @@
                 '</div>' +
             '</div>' +
 
-            '<div class="post-content">' + escapeHtml(content) + '</div>' +
+            '<div class="post-content">' + content + '</div>' +
 
             fileBoxHtml +
 

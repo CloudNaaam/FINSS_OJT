@@ -59,5 +59,17 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(org.springframework.web.servlet.config.annotation.InterceptorRegistry registry) {
         registry.addInterceptor(new AuthCookieInterceptor())
                 .addPathPatterns("/mypage", "/mypage/**", "/board/write");
+
+        registry.addInterceptor(new CsrfInterceptor())
+                .addPathPatterns("/api/**");
+    }
+
+    @Override
+    public void addCorsMappings(org.springframework.web.servlet.config.annotation.CorsRegistry registry) {
+        registry.addMapping("/api/*")
+                .allowedOrigins("http://192.168.21.218:8080")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true);
     }
 }

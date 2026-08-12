@@ -277,6 +277,89 @@
             .form-area { padding: 24px 18px 100px; }
             .bottom-nav { display: flex; }
         }
+
+        /* 💡 URL OG Link Preview Card Styles */
+        .og-preview-card {
+            display: flex;
+            gap: 14px;
+            padding: 14px;
+            margin-top: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            position: relative;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            transition: all 0.2s ease;
+        }
+        .og-preview-card:hover {
+            background: #f1f5f9;
+            border-color: var(--blue);
+        }
+        .og-preview-img {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 8px;
+            flex-shrink: 0;
+            background: #e2e8f0;
+        }
+        .og-preview-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .og-preview-site {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .og-preview-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink);
+            margin: 0 0 4px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .og-preview-desc {
+            font-size: 12px;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .og-close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 22px;
+            height: 22px;
+            border: 0;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.06);
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+        }
+        .og-close-btn:hover {
+            background: #ef4444;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -310,7 +393,9 @@
 
             <div class="form-group">
                 <label for="content">내용</label>
-                <textarea id="content" class="form-control" placeholder="내용을 작성하세요" required></textarea>
+                <textarea id="content" class="form-control" placeholder="내용을 작성하세요 (URL 입력 시 링크 카드 자동 감지)" required></textarea>
+                <!-- URL OG Link Preview Card Render Container -->
+                <div id="ogCardContainer"></div>
             </div>
 
             <div class="form-group">
@@ -389,9 +474,24 @@
         uploadPromise
             .then(function(fileUuid) {
                 submitBtn.innerText = '게시글 저장 중...';
+
+                // 스크랩된 OG 미리보기 카드가 있으면 본문 내용에 깔끔한 링크 카드로 포함
+                var finalContent = content;
+                if (currentOgData) {
+                    var cardHtml = '\n\n<div class="og-embedded-card" style="margin-top: 16px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; display: flex; gap: 12px; align-items: center;">' +
+                        (currentOgData.image ? '<img src="' + escapeHtml(currentOgData.image) + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">' : '') +
+                        '<div>' +
+                            '<div style="font-size: 11px; font-weight: 700; color: #1570ff;">🌐 ' + escapeHtml(currentOgData.site_name || currentOgData.domain) + '</div>' +
+                            '<div style="font-size: 14px; font-weight: 700; margin: 2px 0;"><a href="' + escapeHtml(currentOgData.url) + '" target="_blank" style="color: #22252b; text-decoration: none;">' + escapeHtml(currentOgData.title) + '</a></div>' +
+                            '<div style="font-size: 12px; color: #64748b;">' + escapeHtml(currentOgData.description) + '</div>' +
+                        '</div>' +
+                    '</div>';
+                    finalContent += cardHtml;
+                }
+
                 var payload = {
                     title: title,
-                    content: content,
+                    content: finalContent,
                     file: fileUuid
                 };
 
@@ -421,6 +521,89 @@
                 submitBtn.innerText = '게시글 등록하기';
             });
     });
+
+    // 💡 실시간 URL 감지 및 /api/scrap/og 스크랩 링크 카드 미리보기 기능
+    var currentOgData = null;
+    var scrapTimer = null;
+    var lastScrappedUrl = '';
+
+    var contentInput = document.getElementById('content');
+    if (contentInput) {
+        contentInput.addEventListener('input', function() {
+            clearTimeout(scrapTimer);
+            scrapTimer = setTimeout(detectAndScrapUrl, 400);
+        });
+    }
+
+    function detectAndScrapUrl() {
+        var text = contentInput.value;
+        var urlRegex = /(https?:\/\/[^\s]+)/i;
+        var match = text.match(urlRegex);
+
+        if (!match) return;
+
+        var detectedUrl = match[0].trim();
+        if (detectedUrl === lastScrappedUrl) return;
+
+        lastScrappedUrl = detectedUrl;
+        var container = document.getElementById('ogCardContainer');
+        if (container) {
+            container.innerHTML = '<div style="font-size: 12px; color: var(--blue); margin-top: 8px;">🔍 URL 스크랩 중... (' + escapeHtml(detectedUrl) + ')</div>';
+        }
+
+        fetch('/api/scrap?url=' + encodeURIComponent(detectedUrl))
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data && data.success) {
+                    currentOgData = data;
+                    renderOgCard(data);
+                } else {
+                    if (container) container.innerHTML = '';
+                }
+            })
+            .catch(function(err) {
+                console.error('OG 스크랩 실패:', err);
+                if (container) container.innerHTML = '';
+            });
+    }
+
+    function renderOgCard(og) {
+        var container = document.getElementById('ogCardContainer');
+        if (!container) return;
+
+        var imgHtml = og.image ? '<img src="' + escapeHtml(og.image) + '" class="og-preview-img" alt="썸네일" onerror="this.style.display=\'none\'">' : '';
+        var siteStr = og.site_name || og.domain || '웹사이트';
+
+        var cardHtml = 
+            '<div class="og-preview-card" target="_blank">' +
+                '<button type="button" class="og-close-btn" onclick="removeOgCard(event)" title="링크 카드 닫기">✕</button>' +
+                imgHtml +
+                '<div class="og-preview-info">' +
+                    '<div class="og-preview-site">🌐 ' + escapeHtml(siteStr) + '</div>' +
+                    '<h4 class="og-preview-title">' + escapeHtml(og.title || og.url) + '</h4>' +
+                    '<p class="og-preview-desc">' + escapeHtml(og.description || '내용 요약 없음') + '</p>' +
+                '</div>' +
+            '</div>';
+
+        container.innerHTML = cardHtml;
+    }
+
+    function removeOgCard(e) {
+        if (e) e.preventDefault();
+        currentOgData = null;
+        var container = document.getElementById('ogCardContainer');
+        if (container) container.innerHTML = '';
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 </script>
 </body>
 </html>

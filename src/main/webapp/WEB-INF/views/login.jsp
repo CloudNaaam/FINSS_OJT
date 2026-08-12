@@ -310,6 +310,9 @@
             if (data && data.success) {
                 location.href = "/mypage";
             } else {
+                if (data && data.message) {
+                    alert(data.message);
+                }
                 errorMessage.classList.add("show");
             }
         })

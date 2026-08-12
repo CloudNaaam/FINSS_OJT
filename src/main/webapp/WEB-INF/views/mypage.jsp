@@ -359,7 +359,7 @@
         <div class="header-main">
             <a class="brand" href="/">Finlab</a>
             <div class="header-actions">
-                <button class="icon-button" type="button" aria-label="검색">⌕</button>
+                <button class="icon-button" type="button" aria-label="검색" onclick="openUserSearchModal()">⌕</button>
                 <a class="icon-button" href="/mypage" aria-label="마이페이지" style="text-decoration:none; color: var(--blue);">●</a>
             </div>
         </div>
@@ -371,6 +371,9 @@
     </header>
 
     <main class="mypage-content">
+        <!-- 서버 단에서 문자열 조립된 유저 검색 결과 HTML -->
+        ${userSearchResultHtml}
+
         <!-- 프로필 카드 -->
         <div class="profile-card">
             <div class="avatar-box">
@@ -562,6 +565,40 @@
     }
 
     document.addEventListener("DOMContentLoaded", fetchMyProfile);
+
+    function openUserSearchModal() {
+        var modal = document.getElementById('userSearchModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            var input = document.getElementById('userSearchInput');
+            if (input) input.focus();
+        }
+    }
+
+    function closeUserSearchModal() {
+        var modal = document.getElementById('userSearchModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function handleUserSearchOverlayClick(e) {
+        if (e.target.id === 'userSearchModal') {
+            closeUserSearchModal();
+        }
+    }
 </script>
+
+<!-- 유저 검색 모달 -->
+<div class="search-modal-overlay" id="userSearchModal" onclick="handleUserSearchOverlayClick(event)" style="display: none; position: fixed; z-index: 100; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+    <div class="search-modal-card" onclick="event.stopPropagation()" style="width: min(90%, 480px); background: #fff; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--ink);">👤 유저 검색</h3>
+            <button type="button" onclick="closeUserSearchModal()" style="border: 0; background: transparent; font-size: 20px; cursor: pointer; color: #94a3b8;">✕</button>
+        </div>
+        <form action="/mypage" method="GET" style="display: flex; gap: 8px;">
+            <input type="text" name="user" id="userSearchInput" value="${userKeyword}" placeholder="아이디, 이름, 이메일로 검색" style="flex: 1; height: 48px; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; font-size: 14px; outline: none; background: #f8fafc;">
+            <button type="submit" style="padding: 0 20px; height: 48px; background: var(--blue); color: #fff; border: 0; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer;">검색</button>
+        </form>
+    </div>
+</div>
 </body>
 </html>
