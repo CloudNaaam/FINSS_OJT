@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}대시보드 개요 - OJT Admin Console{% endblock %}
+{% block page_id %}dashboard{% endblock %}
+{% block header_title %}대시보드 개요{% endblock %}
+
+{% block content %}
+<!-- Metrics Cards Row -->
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-label">전체 회원 수</div>
+        <div class="metric-value" id="statTotalUsers">0</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">정지 회원 수 (until 존재)</div>
+        <div class="metric-value" id="statSuspendedUsers" style="color: var(--btn-danger-bg);">0</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">전체 게시글 수</div>
+        <div class="metric-value" id="statTotalPosts">0</div>
+    </div>
+</div>
+
+<!-- API Status Panel -->
+<div class="card">
+    <div class="card-title">
+        <span>GET API 연동 명세표</span>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>관리 기능</th>
+                    <th>Method</th>
+                    <th>API URI 및 파라미터</th>
+                    <th>이동</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>회원 목록 & 검색 조회</strong></td>
+                    <td><span class="badge badge-normal">GET</span></td>
+                    <td><code>/api/users?q=...</code> <i>(status 인자 미사용)</i></td>
+                    <td><a href="/users" class="btn btn-secondary btn-sm">회원 관리</a></td>
+                </tr>
+                <tr>
+                    <td><strong>회원 상세 정보 조회</strong></td>
+                    <td><span class="badge badge-normal">GET</span></td>
+                    <td><code>/api/user/&lt;user_id&gt;</code></td>
+                    <td><a href="/users" class="btn btn-secondary btn-sm">회원 관리</a></td>
+                </tr>
+                <tr>
+                    <td><strong>회원 정지 (until 파라미터)</strong></td>
+                    <td><span class="badge badge-normal">GET</span></td>
+                    <td><code>/api/admin/&lt;user_id&gt;/penalty?until=YYYY-MM-DD HH:MM:SS</code></td>
+                    <td><a href="/users" class="btn btn-secondary btn-sm">정지 설정</a></td>
+                </tr>
+                <tr>
+                    <td><strong>게시글 목록 조회</strong></td>
+                    <td><span class="badge badge-normal">GET</span></td>
+                    <td><code>/api/board?q=...</code></td>
+                    <td><a href="/posts" class="btn btn-secondary btn-sm">게시글 관리</a></td>
+                </tr>
+                <tr>
+                    <td><strong>게시글 삭제</strong></td>
+                    <td><span class="badge badge-normal">GET</span></td>
+                    <td><code>/api/admin/&lt;board_id&gt;/delete</code></td>
+                    <td><a href="/posts" class="btn btn-secondary btn-sm">게시글 관리</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

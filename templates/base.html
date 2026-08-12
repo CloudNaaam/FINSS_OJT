@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ADMIN SYSTEM - FINSS OJT{% endblock %}</title>
+
+    <!-- FontAwesome 6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Admin CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body data-page="{% block page_id %}dashboard{% endblock %}">
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-server"></i>
+            <div>
+                <div class="brand-title">OJT Admin Console</div>
+                <div class="brand-sub">System Management</div>
+            </div>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="/" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>대시보드 개요</span>
+            </a>
+
+            <a href="/users" class="nav-item {% if active_page == 'users' %}active{% endif %}">
+                <i class="fa-solid fa-users"></i>
+                <span>회원 관리</span>
+            </a>
+
+            <a href="/posts" class="nav-item {% if active_page == 'posts' %}active{% endif %}">
+                <i class="fa-solid fa-list-check"></i>
+                <span>게시글 관리</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            Admin Portal v1.0
+        </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <div class="page-title">
+                {% block header_title %}대시보드 개요{% endblock %}
+            </div>
+
+            <div class="top-right-actions">
+                <div class="server-status">
+                    <span class="status-dot"></span>
+                    <span>Flask Local Server</span>
+                </div>
+
+                <div class="admin-profile">
+                    <i class="fa-solid fa-user-circle"></i> 관리자 (admin)
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="content-container">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Global Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Client JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
