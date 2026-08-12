@@ -61,7 +61,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**");
 
         registry.addInterceptor(new AuthCookieInterceptor())
-                .addPathPatterns("/mypage", "/mypage/**", "/board/write");
+                .addPathPatterns("/mypage", "/mypage/**", "/board/write", "/board/write/**", "/stadium-add", "/stadium-add/**", "/stadium-mod", "/stadium-mod/**");
 
         registry.addInterceptor(new CsrfInterceptor())
                 .addPathPatterns("/api/**");

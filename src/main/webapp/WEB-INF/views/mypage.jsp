@@ -387,7 +387,7 @@
             <div>
                 <h1 class="user-title" id="userName">남정운</h1>
                 <p class="user-username" id="userUsername">@cloudnaam</p>
-                <span class="role-badge" id="userRole">관리자 계정</span>
+                <div id="userRoleContainer"><span class="role-badge" id="userRole">일반 회원</span></div>
             </div>
         </div>
 
@@ -581,7 +581,17 @@
 
                 document.getElementById('userName').textContent = data.name || "사용자";
                 document.getElementById('userUsername').textContent = "@" + (data.username || "user");
-                document.getElementById('userRole').textContent = data.isAdmin === 1 ? "관리자 계정" : "일반 회원";
+
+                var roleElem = document.getElementById('userRoleContainer');
+                if (roleElem) {
+                    if (data.isAdmin === 1) {
+                        roleElem.innerHTML = '<a href="http://192.168.21.218:8080" target="_blank" class="role-badge" title="192.168.21.218:8080" style="text-decoration:none; cursor:pointer; background:rgba(21,112,255,0.15); color:var(--blue); font-weight:700;">🛡️ 관리자 계정 (Backoffice ↗)</a>';
+                    } else if (data.isManager === 1) {
+                        roleElem.innerHTML = '<span class="role-badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;">🏟️ 구장 매니저</span>';
+                    } else {
+                        roleElem.innerHTML = '<span class="role-badge">일반 회원</span>';
+                    }
+                }
 
                 document.getElementById('infoName').textContent = data.name || "-";
                 document.getElementById('infoUsername').textContent = data.username || "-";
