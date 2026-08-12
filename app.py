@@ -145,4 +145,4 @@ def get_stats():
 if __name__ == '__main__':
     print("[ADMIN SERVER] FINSS OJT ADMIN SERVER is running on http://127.0.0.1:8080")
     print(f"[TARGET BACKEND] Remote Backend Target: {TARGET_BACKEND_URL}")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8080)

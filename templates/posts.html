@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}게시글 관리 - OJT Admin Console{% endblock %}
+{% block title %}BOARD - FINSS Admin Portal{% endblock %}
 {% block page_id %}posts{% endblock %}
-{% block header_title %}게시글 관리 (/api/board, /api/admin/&lt;board_id&gt;/delete){% endblock %}
+{% block header_title %}BOARD{% endblock %}
 
 {% block content %}
 <!-- Search & Toolbar -->
 <div class="toolbar">
     <div class="search-group">
         <input type="text" id="postSearchInput" class="form-control" placeholder="게시글 제목, 작성자, 내용 검색" onkeyup="if(event.key === 'Enter') loadPostsTable()" style="max-width: 360px;">
-        <button class="btn btn-primary" onclick="loadPostsTable()">검색</button>
+        <button class="btn btn-primary" onclick="loadPostsTable()"><i class="fa-solid fa-magnifying-glass"></i> 검색</button>
     </div>
 </div>
 
@@ -27,7 +27,7 @@
             </tr>
         </thead>
         <tbody id="postsTableBody">
-            <!-- Dynamically loaded via /api/board -->
+            <!-- Dynamically loaded via client JS -->
         </tbody>
     </table>
 </div>

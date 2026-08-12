@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}회원 관리 - OJT Admin Console{% endblock %}
+{% block title %}USERS - FINSS Admin Portal{% endblock %}
 {% block page_id %}users{% endblock %}
-{% block header_title %}회원 관리 (/api/users, /api/user/&lt;user_id&gt;, /api/admin/&lt;user_id&gt;/penalty){% endblock %}
+{% block header_title %}USERS{% endblock %}
 
 {% block content %}
-<!-- Search & Filter Toolbar -->
+<!-- Search Toolbar -->
 <div class="toolbar">
     <div class="search-group">
         <input type="text" id="userSearchInput" class="form-control" placeholder="아이디, 이름, 이메일, 전화번호 검색" onkeyup="if(event.key === 'Enter') loadUsersTable()" style="max-width: 360px;">
-        <button class="btn btn-primary" onclick="loadUsersTable()">검색</button>
+        <button class="btn btn-primary" onclick="loadUsersTable()"><i class="fa-solid fa-magnifying-glass"></i> 검색</button>
     </div>
 </div>
 
@@ -27,7 +27,7 @@
             </tr>
         </thead>
         <tbody id="usersTableBody">
-            <!-- Dynamically loaded via /api/users -->
+            <!-- Dynamically loaded via client JS -->
         </tbody>
     </table>
 </div>
@@ -52,7 +52,7 @@
 <div class="modal-backdrop" id="userBanModal">
     <div class="modal-card" style="max-width: 440px;">
         <div class="modal-header">
-            <h3>회원 정지 설정 (/api/admin/&lt;user_id&gt;/penalty)</h3>
+            <h3>회원 정지 설정</h3>
             <button class="modal-close" onclick="closeModal('userBanModal')">&times;</button>
         </div>
         <div class="modal-body">
@@ -65,21 +65,21 @@
                 <label>빠른 정지 설정</label>
                 <select id="banPresetSelect" class="form-control" onchange="applyBanPreset(this.value)">
                     <option value="CLEAR">정지 해제 (until = Null)</option>
-                    <option value="14" selected>14일 정지 (Timestamp)</option>
-                    <option value="30">30일 정지 (Timestamp)</option>
+                    <option value="14" selected>14일 정지</option>
+                    <option value="30">30일 정지</option>
                     <option value="PERMANENT">영구 정지 (9999-12-31 23:59:59)</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label>DB 전달 Timestamp값 (until)</label>
+                <label>정지 만료 일시 (until Timestamp)</label>
                 <input type="text" id="banTimestampInput" class="form-control" placeholder="YYYY-MM-DD HH:MM:SS">
-                <span style="font-size:11px; color:var(--text-muted);">* DB의 <code>until</code> 컬럼에 직접 저장될 Timestamp 값입니다.</span>
+                <span style="font-size:11px; color:var(--text-muted);">* 정지가 지정한 일시(until Timestamp)까지 적용됩니다.</span>
             </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal('userBanModal')">취소</button>
-            <button class="btn btn-primary" onclick="submitUserBan()">적용 (API)</button>
+            <button class="btn btn-primary" onclick="submitUserBan()">적용</button>
         </div>
     </div>
 </div>

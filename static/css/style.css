@@ -1,12 +1,11 @@
 /* ==========================================
-   Corporate Admin Standard Stylesheet
-   Clean, Minimal, High-Density Enterprise Layout
+   Clean & Simple Corporate Admin Stylesheet
+   Minimal, High-Density, Straightforward UI
    ========================================== */
 
 :root {
     --bg-main: #f8fafc;
     --bg-sidebar: #1e293b;
-    --bg-sidebar-active: #0f172a;
     --bg-card: #ffffff;
     --bg-hover: #f1f5f9;
     
@@ -14,16 +13,13 @@
     --border-dark: #cbd5e1;
 
     --text-primary: #0f172a;
-    --text-secondary: #334155;
-    --text-muted: #64748b;
-    --text-light: #f8fafc;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
 
-    --btn-primary-bg: #2563eb;
-    --btn-primary-hover: #1d4ed8;
-    --btn-danger-bg: #dc2626;
-    --btn-danger-hover: #b91c1c;
-    --btn-warning-bg: #d97706;
-    --btn-warning-hover: #b45309;
+    --accent-blue: #2563eb;
+    --accent-emerald: #16a34a;
+    --accent-amber: #d97706;
+    --accent-red: #dc2626;
 
     --sidebar-width: 220px;
 }
@@ -38,7 +34,7 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background-color: var(--bg-main);
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.5;
     display: flex;
     min-height: 100vh;
@@ -50,7 +46,7 @@ body {
 .sidebar {
     width: var(--sidebar-width);
     background: var(--bg-sidebar);
-    color: var(--text-light);
+    color: #ffffff;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -61,30 +57,41 @@ body {
 .brand {
     padding: 16px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: -0.2px;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
+.brand-logo {
+    width: 28px;
+    height: 28px;
+    background: var(--accent-blue);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 13px;
+}
+
 .brand-title {
     color: #ffffff;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
 }
 
 .brand-sub {
-    font-size: 11px;
+    font-size: 10px;
     color: #94a3b8;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 .nav-menu {
     padding: 12px 0;
     display: flex;
     flex-direction: column;
+    gap: 2px;
     flex: 1;
 }
 
@@ -96,8 +103,8 @@ body {
     color: #94a3b8;
     text-decoration: none;
     font-size: 13px;
-    font-weight: 500;
-    transition: background 0.15s ease, color 0.15s ease;
+    font-weight: 600;
+    transition: background 0.1s ease, color 0.1s ease;
 }
 
 .nav-item:hover {
@@ -107,9 +114,8 @@ body {
 
 .nav-item.active {
     color: #ffffff;
-    background: var(--bg-sidebar-active);
-    border-left: 4px solid var(--btn-primary-bg);
-    font-weight: 600;
+    background: #0f172a;
+    border-left: 3px solid var(--accent-blue);
 }
 
 .nav-item i {
@@ -119,7 +125,7 @@ body {
 }
 
 .sidebar-footer {
-    padding: 14px 20px;
+    padding: 12px 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     font-size: 11px;
     color: #64748b;
@@ -137,7 +143,7 @@ body {
 }
 
 .top-navbar {
-    height: 52px;
+    height: 50px;
     background: #ffffff;
     border-bottom: 1px solid var(--border-color);
     padding: 0 24px;
@@ -150,7 +156,7 @@ body {
 }
 
 .page-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--text-primary);
 }
@@ -160,57 +166,54 @@ body {
     align-items: center;
     gap: 16px;
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 .server-status {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 3px 8px;
+    padding: 2px 8px;
     background: #f1f5f9;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-secondary);
 }
 
 .status-dot {
-    width: 7px;
-    height: 7px;
-    background-color: #16a34a;
+    width: 6px;
+    height: 6px;
+    background-color: var(--accent-emerald);
     border-radius: 50%;
 }
 
 .admin-profile {
     font-weight: 600;
-    color: var(--text-secondary);
 }
 
 .content-container {
-    padding: 24px;
+    padding: 20px 24px;
     flex: 1;
 }
 
 /* ==========================================
-   Cards & Panels
+   Cards & Simple Widgets
    ========================================== */
 .card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    padding: 18px 20px;
-    margin-bottom: 20px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .card-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
 }
 
 /* Metrics Cards Row */
@@ -218,27 +221,41 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .metric-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    padding: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.metric-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
 }
 
 .metric-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-muted);
-    font-weight: 500;
-    margin-bottom: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
 }
 
 .metric-value {
     font-size: 22px;
     font-weight: 700;
     color: var(--text-primary);
+}
+
+.metric-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
 }
 
 /* ==========================================
@@ -248,12 +265,13 @@ body {
     background: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    padding: 12px 16px;
+    padding: 10px 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .search-group {
@@ -274,7 +292,7 @@ body {
 }
 
 .form-control:focus {
-    border-color: var(--btn-primary-bg);
+    border-color: var(--accent-blue);
 }
 
 .select-control {
@@ -294,6 +312,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 4px;
     overflow-x: auto;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .data-table {
@@ -316,7 +335,7 @@ body {
     padding: 10px 14px;
     border-bottom: 1px solid var(--border-color);
     vertical-align: middle;
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 .data-table tbody tr:hover {
@@ -324,15 +343,14 @@ body {
 }
 
 /* ==========================================
-   Badges
+   Badges & Buttons
    ========================================== */
 .badge {
     display: inline-block;
-    padding: 2px 8px;
+    padding: 2px 6px;
     border-radius: 3px;
     font-size: 11px;
     font-weight: 600;
-    text-transform: none;
 }
 
 .badge-normal, .badge-active {
@@ -341,48 +359,33 @@ body {
     border: 1px solid #bbf7d0;
 }
 
-.badge-suspended, .badge-blinded {
-    background: #fef3c7;
-    color: #b45309;
-    border: 1px solid #fde68a;
-}
-
-.badge-permanent_ban, .badge-deleted {
+.badge-suspended {
     background: #fee2e2;
     color: #b91c1c;
     border: 1px solid #fecaca;
 }
 
-.badge-gm {
-    background: #e0e7ff;
-    color: #3730a3;
-    border: 1px solid #c7d2fe;
-}
-
-/* ==========================================
-   Buttons
-   ========================================== */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 6px 12px;
-    font-size: 13px;
+    gap: 4px;
+    padding: 5px 12px;
+    font-size: 12px;
     font-weight: 500;
     border-radius: 4px;
     border: 1px solid transparent;
     cursor: pointer;
     background: #ffffff;
     color: var(--text-primary);
-    transition: background 0.15s ease;
+    transition: background 0.1s ease;
 }
 
 .btn-primary {
-    background: var(--btn-primary-bg);
+    background: var(--accent-blue);
     color: #ffffff;
 }
-.btn-primary:hover { background: var(--btn-primary-hover); }
+.btn-primary:hover { background: #1d4ed8; }
 
 .btn-secondary {
     background: #ffffff;
@@ -411,7 +414,7 @@ body {
 }
 
 /* ==========================================
-   Modals & Overlay
+   Modals
    ========================================== */
 .modal-backdrop {
     position: fixed;
@@ -419,7 +422,7 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(15, 23, 42, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -437,16 +440,16 @@ body {
 .modal-card {
     background: #ffffff;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 4px;
     width: 90%;
-    max-width: 600px;
+    max-width: 500px;
     max-height: 85vh;
     overflow-y: auto;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
-    padding: 14px 18px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -467,11 +470,11 @@ body {
 }
 
 .modal-body {
-    padding: 18px;
+    padding: 16px;
 }
 
 .modal-footer {
-    padding: 12px 18px;
+    padding: 10px 16px;
     border-top: 1px solid var(--border-color);
     background: #f8fafc;
     display: flex;
@@ -482,12 +485,12 @@ body {
 .info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 10px;
     background: #f8fafc;
     padding: 12px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .info-item {
@@ -511,8 +514,8 @@ body {
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 14px;
+    gap: 4px;
+    margin-bottom: 12px;
 }
 
 .form-group label {
@@ -535,15 +538,15 @@ body {
 .toast {
     background: #1e293b;
     color: #ffffff;
-    padding: 10px 16px;
+    padding: 10px 14px;
     border-radius: 4px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     font-size: 13px;
 }
 
 .toast.error {
-    background: #991b1b;
+    background: #dc2626;
 }
