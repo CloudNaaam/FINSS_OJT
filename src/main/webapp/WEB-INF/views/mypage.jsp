@@ -463,7 +463,11 @@
         var formData = new FormData();
         formData.append('profile_img', file);
 
-        fetch('/api/profile/imgup', {
+        var csrfVal = window.sessionCsrfToken || '';
+        var imgUpUrl = '/api/profile/imgup';
+        if (csrfVal) imgUpUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
+
+        fetch(imgUpUrl, {
             method: 'POST',
             body: formData
         })
@@ -491,7 +495,11 @@
     function deleteProfileImage() {
         if (!confirm('프로필 사진을 삭제하시겠습니까?')) return;
 
-        fetch('/api/profile/imagedel', {
+        var csrfVal = window.sessionCsrfToken || '';
+        var imgDelUrl = '/api/profile/imagedel';
+        if (csrfVal) imgDelUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
+
+        fetch(imgDelUrl, {
             method: 'DELETE'
         })
         .then(function(res) { return res.json(); })
@@ -564,7 +572,10 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", fetchMyProfile);
+    document.addEventListener("DOMContentLoaded", function() {
+        fetchMyProfile();
+        window.sessionCsrfToken = '${sessionScope.CSRF_TOKEN}';
+    });
 
     function openUserSearchModal() {
         var modal = document.getElementById('userSearchModal');

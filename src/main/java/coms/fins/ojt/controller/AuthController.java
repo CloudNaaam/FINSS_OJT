@@ -64,6 +64,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(
             @RequestBody Map<String, String> loginRequest,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
             jakarta.servlet.http.HttpServletResponse response) {
 
         Map<String, Object> result = new HashMap<>();
@@ -85,13 +86,20 @@ public class AuthController {
                 return ResponseEntity.ok(result);
             }
 
+            // 1. 쿠키 설정
             jakarta.servlet.http.Cookie userCookie = new jakarta.servlet.http.Cookie("user_id", String.valueOf(user.getUserId()));
             userCookie.setPath("/");
             userCookie.setMaxAge(60 * 60 * 24 * 7); // 7일 유지
             response.addCookie(userCookie);
 
+            // 2. HTTP 세션 생성 및 세션 전용 CSRF 토큰 발급
+            jakarta.servlet.http.HttpSession session = httpRequest.getSession(true);
+            String csrfToken = coms.fins.ojt.util.CsrfTokenManager.generateToken();
+            session.setAttribute(coms.fins.ojt.util.CsrfTokenManager.SESSION_CSRF_KEY, csrfToken);
+
             result.put("success", true);
             result.put("user_id", user.getUserId());
+            result.put("csrfToken", csrfToken); // 세션 CSRF 토큰 반환
             return ResponseEntity.ok(result);
         } else {
             result.put("success", false);
@@ -102,12 +110,20 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Map<String, Boolean>> logout(
+            jakarta.servlet.http.HttpServletRequest httpRequest,
             jakarta.servlet.http.HttpServletResponse response) {
 
+        // 1. 쿠키 제거
         jakarta.servlet.http.Cookie userCookie = new jakarta.servlet.http.Cookie("user_id", "");
         userCookie.setPath("/");
         userCookie.setMaxAge(0);
         response.addCookie(userCookie);
+
+        // 2. 세션 및 세션 CSRF 토큰 완전 파기
+        jakarta.servlet.http.HttpSession session = httpRequest.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
 
         Map<String, Boolean> result = new HashMap<>();
         result.put("success", true);
@@ -149,19 +165,5 @@ public class AuthController {
             response.put("message", "인증 코드가 올바르지 않거나 만료되었습니다.");
         }
         return ResponseEntity.ok(response);
-    }
-
-    /**
-     * 10분 유효기간 CSRF 토큰 발급 API (GET /api/auth/csrf 또는 GET /api/csrf)
-     */
-    @GetMapping({"/csrf", "/api/csrf"})
-    public ResponseEntity<Map<String, Object>> getCsrfToken() {
-        String token = coms.fins.ojt.util.CsrfTokenManager.generateToken();
-        Map<String, Object> result = new HashMap<>();
-        result.put("csrf_token", token);
-        result.put("param_name", "csrfToken");
-        result.put("expires_in_seconds", 600); // 10분 = 600초
-        result.put("message", "CSRF 토큰이 발급되었습니다. (10분 유효, Form param: csrfToken)");
-        return ResponseEntity.ok(result);
     }
 }

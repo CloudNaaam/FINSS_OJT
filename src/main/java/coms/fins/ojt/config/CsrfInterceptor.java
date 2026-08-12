@@ -22,20 +22,34 @@ public class CsrfInterceptor implements HandlerInterceptor {
         }
 
         String requestURI = request.getRequestURI();
-        if (requestURI.equals("/api/auth/login") || requestURI.equals("/api/auth/csrf") || requestURI.equals("/api/csrf")) {
+        if (requestURI.equals("/api/auth/login") 
+                || requestURI.equals("/api/auth/register")
+                || requestURI.equals("/api/auth/dup")
+                || requestURI.equals("/api/auth/send_code")
+                || requestURI.equals("/api/auth/valid_code")) {
             return true;
         }
 
-        // 오직 HTML Form 데이터 (name="csrfToken") 만 추출하여 10분 유효기간 검증
-        String token = request.getParameter("csrfToken");
+        // HTML Form 데이터 (name="csrfToken") 추출
+        String clientToken = request.getParameter("csrfToken");
 
-        // 10분 유효기간 검증
-        if (token == null || !CsrfTokenManager.validateToken(token)) {
+        // 세션에 저장된 CSRF 토큰 추출
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        String sessionToken = (session != null) ? (String) session.getAttribute(CsrfTokenManager.SESSION_CSRF_KEY) : null;
+
+        // 세션 CSRF 토큰 검증 (세션 토큰과 클라이언트 폼 토큰 일치 여부 판별)
+        if (sessionToken == null || clientToken == null || !sessionToken.equals(clientToken.trim())) {
+            String origin = request.getHeader("Origin");
+            if (origin != null && !origin.isBlank()) {
+                response.setHeader("Access-Control-Allow-Origin", origin);
+                response.setHeader("Access-Control-Allow-Credentials", "true");
+            }
+
             response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403 Forbidden
             response.setContentType("application/json;charset=UTF-8");
 
             PrintWriter writer = response.getWriter();
-            writer.write("{\"success\":false, \"code\":\"CSRF_EXPIRED\", \"message\":\"CSRF 토큰이 유효하지 않거나 10분 유효기간이 만료되었습니다. /api/auth/csrf 에서 새로 발급받으세요.\"}");
+            writer.write("{\"success\":false, \"code\":\"INVALID_CSRF_TOKEN\", \"message\":\"CSRF 토큰이 없거나 유효하지 않습니다. (세션이 만료되었거나 로그인이 필요할 수 있습니다.)\"}");
             writer.flush();
             return false;
         }

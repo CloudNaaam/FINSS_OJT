@@ -386,6 +386,9 @@
         </div>
 
         <form id="writeForm">
+            <!-- 💡 세션 CSRF 토큰 직접 주입 -->
+            <input type="hidden" name="csrfToken" id="csrfToken" value="${sessionScope.CSRF_TOKEN}">
+
             <div class="form-group">
                 <label for="title">제목</label>
                 <input type="text" id="title" class="form-control" placeholder="제목을 입력하세요" required>
@@ -489,13 +492,20 @@
                     finalContent += cardHtml;
                 }
 
+                var csrfVal = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : '';
                 var payload = {
                     title: title,
                     content: finalContent,
-                    file: fileUuid
+                    file: fileUuid,
+                    csrfToken: csrfVal
                 };
 
-                return fetch('/api/board/write', {
+                var writeUrl = '/api/board/write';
+                if (csrfVal) {
+                    writeUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
+                }
+
+                return fetch(writeUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -521,6 +531,8 @@
                 submitBtn.innerText = '게시글 등록하기';
             });
     });
+
+
 
     // 💡 실시간 URL 감지 및 /api/scrap/og 스크랩 링크 카드 미리보기 기능
     var currentOgData = null;

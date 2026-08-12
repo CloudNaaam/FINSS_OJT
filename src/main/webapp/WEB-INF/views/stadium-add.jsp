@@ -185,6 +185,8 @@
     </div>
 
     <form id="addForm" onsubmit="submitForm(event)">
+        <!-- 💡 세션 CSRF 토큰 직접 주입 -->
+        <input type="hidden" name="csrfToken" id="csrfToken" value="${sessionScope.CSRF_TOKEN}">
         <div class="form-card">
             <!-- 1. 기본 및 위치 정보 -->
             <div class="form-section-title">📍 구장 위치 및 기본 정보</div>
@@ -343,7 +345,13 @@
             '    <notice>' + escapeXml(notice) + '</notice>\n' +
             '</ground>';
 
-        fetch('/api/ground/add', {
+        var csrfVal = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : '';
+        var targetUrl = '/api/ground/add';
+        if (csrfVal) {
+            targetUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
+        }
+
+        fetch(targetUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/xml; charset=UTF-8'
