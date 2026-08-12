@@ -86,19 +86,28 @@ public class AuthController {
                 return ResponseEntity.ok(result);
             }
 
-            // 1. 쿠키 설정
-            jakarta.servlet.http.Cookie userCookie = new jakarta.servlet.http.Cookie("user_id", String.valueOf(user.getUserId()));
-            userCookie.setPath("/");
-            userCookie.setMaxAge(60 * 60 * 24 * 7); // 7일 유지
-            response.addCookie(userCookie);
+            // 1. user_id 쿠키 설정 (HttpOnly=true, SameSite=Lax 적용)
+            org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
+                    .from("user_id", String.valueOf(user.getUserId()))
+                    .path("/")
+                    .maxAge(60 * 60 * 24 * 7) // 7일 유지
+                    .sameSite("Lax")          // SameSite=Lax 적용
+                    .httpOnly(true)           // 💡 HttpOnly 적용 (보안 강화를 위해 JS 접근 금지)
+                    .build();
+            response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 
             // 2. HTTP 세션 생성 및 세션 전용 CSRF 토큰 발급
             jakarta.servlet.http.HttpSession session = httpRequest.getSession(true);
             String csrfToken = coms.fins.ojt.util.CsrfTokenManager.generateToken();
             session.setAttribute(coms.fins.ojt.util.CsrfTokenManager.SESSION_CSRF_KEY, csrfToken);
 
+            // 3. RS256 서명 JWT 토큰 생성 (로컬스토리지 보관용)
+            String jwtToken = coms.fins.ojt.util.JwtTokenProvider.generateAccessToken(user.getUserId(), user.getUsername());
+
             result.put("success", true);
             result.put("user_id", user.getUserId());
+            result.put("access_token", jwtToken);
+            result.put("token_type", "Bearer");
             result.put("csrfToken", csrfToken); // 세션 CSRF 토큰 반환
             return ResponseEntity.ok(result);
         } else {
@@ -113,11 +122,15 @@ public class AuthController {
             jakarta.servlet.http.HttpServletRequest httpRequest,
             jakarta.servlet.http.HttpServletResponse response) {
 
-        // 1. 쿠키 제거
-        jakarta.servlet.http.Cookie userCookie = new jakarta.servlet.http.Cookie("user_id", "");
-        userCookie.setPath("/");
-        userCookie.setMaxAge(0);
-        response.addCookie(userCookie);
+        // 1. user_id 쿠키 제거 (SameSite=Lax, HttpOnly=true)
+        org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
+                .from("user_id", "")
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .httpOnly(true)
+                .build();
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 
         // 2. 세션 및 세션 CSRF 토큰 완전 파기
         jakarta.servlet.http.HttpSession session = httpRequest.getSession(false);

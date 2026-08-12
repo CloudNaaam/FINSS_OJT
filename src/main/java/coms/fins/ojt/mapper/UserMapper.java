@@ -21,4 +21,6 @@ public interface UserMapper {
     int updateUserPenalty(@Param("userId") Long userId, @Param("penaltyUntil") java.util.Date penaltyUntil);
     int selectTotalUserCount();
     int selectPenalizedUserCount();
+    int updateUserPoint(@Param("userId") Long userId, @Param("point") Integer point);
+    UserVO findByUsernameOrName(@Param("target") String target);
 }

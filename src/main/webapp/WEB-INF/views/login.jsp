@@ -308,6 +308,9 @@
         })
         .then(function (data) {
             if (data && data.success) {
+                if (data.access_token) {
+                    localStorage.setItem('access_token', data.access_token);
+                }
                 location.href = "/mypage";
             } else {
                 if (data && data.message) {

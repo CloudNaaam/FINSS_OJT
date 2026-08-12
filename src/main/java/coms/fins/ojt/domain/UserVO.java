@@ -136,11 +136,21 @@ public class UserVO {
         this.createdAt = createdAt;
     }
 
+    private Integer point = 1000;
+
     public Date getPenaltyUntil() {
         return penaltyUntil;
     }
 
     public void setPenaltyUntil(Date penaltyUntil) {
         this.penaltyUntil = penaltyUntil;
+    }
+
+    public Integer getPoint() {
+        return point;
+    }
+
+    public void setPoint(Integer point) {
+        this.point = point;
     }
 }

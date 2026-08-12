@@ -57,6 +57,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(org.springframework.web.servlet.config.annotation.InterceptorRegistry registry) {
+        registry.addInterceptor(new JwtInterceptor())
+                .addPathPatterns("/api/**");
+
         registry.addInterceptor(new AuthCookieInterceptor())
                 .addPathPatterns("/mypage", "/mypage/**", "/board/write");
 

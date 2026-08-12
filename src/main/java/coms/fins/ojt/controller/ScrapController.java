@@ -27,14 +27,14 @@ public class ScrapController {
      * URL 스크랩 API (GET /api/scrap?url=https://...)
      * 요청받은 외부 URL 웹페이지 접속 후 HTML 본문(Content) 수집하여 반환
      */
-    @GetMapping("/api/scrap")
+    @GetMapping(value = "/api/scrap", produces = "text/html;charset=UTF-8")
     public ResponseEntity<String> scrapUrl(
             @RequestParam(value = "url", required = false) String targetUrl) {
 
         String ssrfError = validateSsrfSafety(targetUrl);
         if (ssrfError != null) {
             return ResponseEntity.badRequest()
-                    .contentType(MediaType.TEXT_PLAIN)
+                    .contentType(new MediaType("text", "plain", StandardCharsets.UTF_8))
                     .body(ssrfError);
         }
 
@@ -254,56 +254,40 @@ public class ScrapController {
         }
 
         try {
-            java.net.URI uri = new java.net.URI(trimmedUrl);
-            String scheme = uri.getScheme();
+            java.net.URL urlObj = new java.net.URL(trimmedUrl);
+            String scheme = urlObj.getProtocol();
 
             // 1. 프로토콜 검증 (http, https 만 허용)
             if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
                 return "Error: 허용되지 않는 프로토콜입니다. (http 및 https만 허용)";
             }
 
-            String host = uri.getHost();
+            String host = urlObj.getHost();
             if (host == null || host.isBlank()) {
                 return "Error: 유효하지 않은 호스트명입니다.";
             }
 
             String hostLower = host.toLowerCase();
 
-            // 2. 호스트명 직관 블랙리스트 (localhost / 127.0.0.1 / 0.0.0.0 등)
-            if (hostLower.equals("localhost") || hostLower.equals("127.0.0.1") || hostLower.equals("0.0.0.0")
-                    || hostLower.equals("::1") || hostLower.contains("localhost")) {
-                return "Error: 보안 정책상 접근이 제한된 호스트(localhost/127.0.0.1)입니다.";
+            // 2. 호스트명 문자열 기반 차단 (10.x, 172.16~31.x, 192.168.x, 169.254.x 등 사설 IP 텍스트 차단)
+            boolean isPrivate172 = false;
+            if (hostLower.startsWith("172.")) {
+                String[] parts = hostLower.split("\\.");
+                if (parts.length >= 2) {
+                    try {
+                        int secondOctet = Integer.parseInt(parts[1]);
+                        if (secondOctet >= 16 && secondOctet <= 31) {
+                            isPrivate172 = true;
+                        }
+                    } catch (NumberFormatException ignored) {}
+                }
             }
 
-            // 3. DNS Lookup 및 사설 IP 대역 (Private / Loopback / Link-Local) 검증
-            java.net.InetAddress[] addresses = java.net.InetAddress.getAllByName(host);
-            for (java.net.InetAddress addr : addresses) {
-                if (addr.isLoopbackAddress() || addr.isSiteLocalAddress() || addr.isLinkLocalAddress() || addr.isAnyLocalAddress()) {
-                    return "Error: 보안 정책상 접근이 제한된 사설 IP/내부망 주소입니다. (IP: " + addr.getHostAddress() + ")";
-                }
-
-                byte[] rawAddr = addr.getAddress();
-                if (rawAddr.length == 4) {
-                    int first = rawAddr[0] & 0xFF;
-                    int second = rawAddr[1] & 0xFF;
-
-                    // 169.254.x.x (AWS/Cloud Metadata API 차단)
-                    if (first == 169 && second == 254) {
-                        return "Error: 보안 정책상 접근이 제한된 클라우드 메타데이터 IP 주소입니다.";
-                    }
-                    // 10.0.0.0/8
-                    if (first == 10) {
-                        return "Error: 보안 정책상 접근이 제한된 10.x.x.x 사설 IP 주소입니다.";
-                    }
-                    // 172.16.0.0/12
-                    if (first == 172 && (second >= 16 && second <= 31)) {
-                        return "Error: 보안 정책상 접근이 제한된 172.16.x.x~172.31.x.x 사설 IP 주소입니다.";
-                    }
-                    // 192.168.0.0/16
-                    if (first == 192 && second == 168) {
-                        return "Error: 보안 정책상 접근이 제한된 192.168.x.x 사설 IP 주소입니다.";
-                    }
-                }
+            if (hostLower.equals("localhost") || hostLower.equals("127.0.0.1") || hostLower.equals("0.0.0.0")
+                    || hostLower.equals("::1") || hostLower.contains("localhost")
+                    || hostLower.startsWith("10.") || hostLower.startsWith("192.168.")
+                    || hostLower.startsWith("169.254.") || isPrivate172) {
+                return "Error: 보안 정책상 접근이 제한된 호스트(localhost/127.0.0.1/사설IP)입니다.";
             }
 
         } catch (Exception e) {

@@ -414,6 +414,13 @@
                 <span class="info-label">성별 / 나이</span>
                 <span class="info-value" id="infoGenderAge">남성 · 28세</span>
             </div>
+            <div class="info-row" style="background: #f8fafc; border-radius: 8px; margin-top: 4px;">
+                <span class="info-label" style="font-weight: 700; color: var(--blue);">💰 보유 포인트</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="info-value" id="infoPoint" style="font-size: 16px; font-weight: 800; color: #1e293b;">1,000 P</span>
+                    <button type="button" class="btn-profile-act" style="background: var(--blue); color: #fff; padding: 4px 10px;" onclick="openPointModal()">🎁 선물하기</button>
+                </div>
+            </div>
         </div>
 
         <!-- 계정 설정 메뉴 -->
@@ -449,6 +456,48 @@
         <a href="/notice"><span>📢</span>공지</a>
         <a class="active" href="/mypage"><span>●</span>MY</a>
     </nav>
+</div>
+
+<!-- 유저 검색 모달 -->
+<div id="userSearchModal" class="user-modal-backdrop" style="display: none;">
+    <div class="user-modal-content">
+        <h3 style="margin-top:0; font-size:18px; font-weight:800; color:#1e293b;">🔍 회원 검색</h3>
+        <p style="font-size:13px; color:#64748b; margin-bottom:16px;">회원 이름 또는 아이디로 검색해 보세요.</p>
+        <form action="/mypage" method="GET">
+            <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <input type="text" name="user" class="user-search-input" placeholder="검색어 입력..." required>
+                <button type="submit" class="btn-profile-act" style="background:var(--blue); color:#fff; padding:8px 16px;">검색</button>
+            </div>
+        </form>
+        <div style="text-align:right;">
+            <button type="button" class="btn-profile-act" style="background:#e2e8f0; color:#334155; padding:6px 12px;" onclick="closeUserSearchModal()">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 🎁 포인트 선물하기 모달 -->
+<div id="pointSendModal" class="user-modal-backdrop" style="display: none;">
+    <div class="user-modal-content" style="max-width: 400px; padding: 24px; border-radius: 16px; background: #fff;">
+        <h3 style="margin-top:0; font-size:18px; font-weight:800; color:#1e293b;">🎁 포인트 선물하기</h3>
+        <p style="font-size:13px; color:#64748b; margin-bottom:16px;">다른 회원에게 포인트를 선물하세요.</p>
+        <form id="pointSendForm" onsubmit="handleSendPoint(event)">
+            <!-- 💡 세션 CSRF 토큰 직접 주입 -->
+            <input type="hidden" name="csrfToken" id="pointCsrfToken" value="${sessionScope.CSRF_TOKEN}">
+
+            <div style="margin-bottom: 12px; text-align: left;">
+                <label style="font-size:12px; font-weight:700; color:#475569;">받는 사람 (이름 또는 아이디)</label>
+                <input type="text" id="sendToInput" name="send_to" class="user-search-input" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="예: 홍길동 또는 user01" required>
+            </div>
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="font-size:12px; font-weight:700; color:#475569;">선물할 포인트 (P)</label>
+                <input type="number" id="sendPointInput" name="send_point" class="user-search-input" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="예: 1000" min="1" required>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button type="button" class="btn-profile-act" style="background:#e2e8f0; color:#334155; padding:8px 16px;" onclick="closePointModal()">취소</button>
+                <button type="submit" id="pointSubmitBtn" class="btn-profile-act" style="background:var(--blue); color:#fff; padding:8px 16px;">선물하기</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
@@ -542,6 +591,7 @@
                 var genderStr = data.gender === "MALE" ? "남성" : (data.gender === "FEMALE" ? "여성" : "미지정");
                 var ageStr = data.age ? data.age + "세" : "-";
                 document.getElementById('infoGenderAge').textContent = genderStr + " · " + ageStr;
+                document.getElementById('infoPoint').textContent = (data.point != null ? data.point.toLocaleString() : '0') + ' P';
 
                 var avatarDisplay = document.getElementById('avatarDisplay');
                 if (data.profileImg && data.profileImg.trim() !== '') {
@@ -579,11 +629,7 @@
 
     function openUserSearchModal() {
         var modal = document.getElementById('userSearchModal');
-        if (modal) {
-            modal.style.display = 'flex';
-            var input = document.getElementById('userSearchInput');
-            if (input) input.focus();
-        }
+        if (modal) modal.style.display = 'grid';
     }
 
     function closeUserSearchModal() {
@@ -591,10 +637,63 @@
         if (modal) modal.style.display = 'none';
     }
 
-    function handleUserSearchOverlayClick(e) {
-        if (e.target.id === 'userSearchModal') {
-            closeUserSearchModal();
+    function openPointModal() {
+        var modal = document.getElementById('pointSendModal');
+        if (modal) modal.style.display = 'grid';
+    }
+
+    function closePointModal() {
+        var modal = document.getElementById('pointSendModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function handleSendPoint(e) {
+        e.preventDefault();
+
+        var sendTo = document.getElementById('sendToInput').value.trim();
+        var sendPointVal = parseInt(document.getElementById('sendPointInput').value.trim(), 10);
+        var csrfVal = document.getElementById('pointCsrfToken').value;
+
+        if (!sendTo || isNaN(sendPointVal) || sendPointVal <= 0) {
+            alert('받는 사람과 유효한 포인트를 입력해주세요.');
+            return;
         }
+
+        var submitBtn = document.getElementById('pointSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = '전송 중...';
+
+        var payload = {
+            send_to: sendTo,
+            send_point: sendPointVal,
+            csrfToken: csrfVal
+        };
+
+        fetch('/api/point/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = '선물하기';
+
+            if (data && data.success) {
+                alert('포인트를 성공적으로 전달했습니다!');
+                closePointModal();
+                fetchMyProfile();
+            } else {
+                alert('포인트 전달 실패: ' + (data.message || '오류가 발생했습니다.'));
+            }
+        })
+        .catch(function(err) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = '선물하기';
+            alert('요청 처리 중 오류가 발생했습니다.');
+        });
     }
 </script>
 

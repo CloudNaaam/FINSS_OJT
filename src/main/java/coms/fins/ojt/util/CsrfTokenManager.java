@@ -15,6 +15,6 @@ public class CsrfTokenManager {
      * 새로운 세션용 무작위 CSRF 토큰 생성
      */
     public static String generateToken() {
-        return "CSRF-" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
+        return UUID.randomUUID().toString().replace("-", "");
     }
 }
