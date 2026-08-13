@@ -351,6 +351,32 @@
             .mypage-content { padding: 24px 18px 100px; }
             .bottom-nav { display: flex; }
         }
+        /* 💡 매치/구장 검색 모달과 100% 동일한 고정 위치 팝업 스타일 */
+        .search-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 60px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+        }
+
+        .search-modal-card {
+            width: min(90%, 480px);
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            padding: 24px;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -458,20 +484,18 @@
     </nav>
 </div>
 
-<!-- 유저 검색 모달 -->
-<div id="userSearchModal" class="user-modal-backdrop" style="display: none;">
-    <div class="user-modal-content">
-        <h3 style="margin-top:0; font-size:18px; font-weight:800; color:#1e293b;">🔍 회원 검색</h3>
-        <p style="font-size:13px; color:#64748b; margin-bottom:16px;">회원 이름 또는 아이디로 검색해 보세요.</p>
-        <form action="/mypage" method="GET">
-            <div style="display:flex; gap:8px; margin-bottom:16px;">
-                <input type="text" name="user" class="user-search-input" placeholder="검색어 입력..." required>
-                <button type="submit" class="btn-profile-act" style="background:var(--blue); color:#fff; padding:8px 16px;">검색</button>
-            </div>
-        </form>
-        <div style="text-align:right;">
-            <button type="button" class="btn-profile-act" style="background:#e2e8f0; color:#334155; padding:6px 12px;" onclick="closeUserSearchModal()">닫기</button>
+<!-- 🔍 회원 검색 모달 (Match / Ground 검색 모달과 100% 동일 구조) -->
+<div class="search-modal-overlay" id="userSearchModal" onclick="closeUserSearchModalOnBackdrop(event)">
+    <div class="search-modal-card" onclick="event.stopPropagation()">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #1e293b;">👤 회원 검색</h3>
+            <button type="button" onclick="closeUserSearchModal()" style="border: 0; background: transparent; font-size: 20px; cursor: pointer; color: #94a3b8;">✕</button>
         </div>
+        <p style="font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 16px;">회원 이름, 아이디 또는 이메일로 검색해 보세요.</p>
+        <form action="/mypage" method="GET" style="display: flex; gap: 8px;">
+            <input type="text" name="user" id="userSearchInput" value="${userKeyword}" placeholder="회원 이름 또는 아이디 입력..." style="flex: 1; height: 48px; padding: 0 16px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 14px; outline: none; background: #f8fafc;" required>
+            <button type="submit" style="padding: 0 20px; height: 48px; background: var(--blue); color: #fff; border: 0; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer;">검색</button>
+        </form>
     </div>
 </div>
 
@@ -642,12 +666,20 @@
 
     function openUserSearchModal() {
         var modal = document.getElementById('userSearchModal');
-        if (modal) modal.style.display = 'grid';
+        if (modal) modal.style.display = 'flex';
+        var input = document.getElementById('userSearchInput');
+        if (input) setTimeout(function(){ input.focus(); }, 100);
     }
 
     function closeUserSearchModal() {
         var modal = document.getElementById('userSearchModal');
         if (modal) modal.style.display = 'none';
+    }
+
+    function closeUserSearchModalOnBackdrop(e) {
+        if (e.target && e.target.id === 'userSearchModal') {
+            closeUserSearchModal();
+        }
     }
 
     function openPointModal() {
@@ -711,18 +743,6 @@
     }
 </script>
 
-<!-- 유저 검색 모달 -->
-<div class="search-modal-overlay" id="userSearchModal" onclick="handleUserSearchOverlayClick(event)" style="display: none; position: fixed; z-index: 100; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-    <div class="search-modal-card" onclick="event.stopPropagation()" style="width: min(90%, 480px); background: #fff; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--ink);">👤 유저 검색</h3>
-            <button type="button" onclick="closeUserSearchModal()" style="border: 0; background: transparent; font-size: 20px; cursor: pointer; color: #94a3b8;">✕</button>
-        </div>
-        <form action="/mypage" method="GET" style="display: flex; gap: 8px;">
-            <input type="text" name="user" id="userSearchInput" value="${userKeyword}" placeholder="아이디, 이름, 이메일로 검색" style="flex: 1; height: 48px; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; font-size: 14px; outline: none; background: #f8fafc;">
-            <button type="submit" style="padding: 0 20px; height: 48px; background: var(--blue); color: #fff; border: 0; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer;">검색</button>
-        </form>
-    </div>
-</div>
+
 </body>
 </html>
