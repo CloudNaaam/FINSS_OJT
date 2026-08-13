@@ -96,13 +96,6 @@ public class AuthController {
                     .build();
             response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 
-            // 구형 서블릿/브라우저 호환을 위한 서블릿 Cookie 객체 추가
-            jakarta.servlet.http.Cookie stdCookie = new jakarta.servlet.http.Cookie("user_id", String.valueOf(user.getUserId()));
-            stdCookie.setPath("/");
-            stdCookie.setMaxAge(60 * 60 * 24 * 7);
-            stdCookie.setHttpOnly(false);
-            response.addCookie(stdCookie);
-
             // 2. HTTP 세션 생성 및 세션 전용 CSRF 토큰 발급
             jakarta.servlet.http.HttpSession session = httpRequest.getSession(true);
             String csrfToken = coms.fins.ojt.util.CsrfTokenManager.generateToken();
