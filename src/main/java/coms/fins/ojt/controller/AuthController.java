@@ -86,13 +86,13 @@ public class AuthController {
                 return ResponseEntity.ok(result);
             }
 
-            // 1. user_id 쿠키 설정 (HttpOnly=true, SameSite=Lax 적용)
+            // 1. user_id 쿠키 설정 (HttpOnly=false, SameSite=Lax 적용)
             org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
                     .from("user_id", String.valueOf(user.getUserId()))
                     .path("/")
                     .maxAge(60 * 60 * 24 * 7) // 7일 유지
                     .sameSite("Lax")          // SameSite=Lax 적용
-                    .httpOnly(true)           // 💡 HttpOnly 적용 (보안 강화를 위해 JS 접근 금지)
+                    .httpOnly(false)          // JS 접근 허용 (HttpOnly 미적용)
                     .build();
             response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 
@@ -100,7 +100,7 @@ public class AuthController {
             jakarta.servlet.http.Cookie stdCookie = new jakarta.servlet.http.Cookie("user_id", String.valueOf(user.getUserId()));
             stdCookie.setPath("/");
             stdCookie.setMaxAge(60 * 60 * 24 * 7);
-            stdCookie.setHttpOnly(true);
+            stdCookie.setHttpOnly(false);
             response.addCookie(stdCookie);
 
             // 2. HTTP 세션 생성 및 세션 전용 CSRF 토큰 발급
@@ -129,13 +129,13 @@ public class AuthController {
             jakarta.servlet.http.HttpServletRequest httpRequest,
             jakarta.servlet.http.HttpServletResponse response) {
 
-        // 1. user_id 쿠키 제거 (SameSite=Lax, HttpOnly=true)
+        // 1. user_id 쿠키 제거 (SameSite=Lax, HttpOnly=false)
         org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
                 .from("user_id", "")
                 .path("/")
                 .maxAge(0)
                 .sameSite("Lax")
-                .httpOnly(true)
+                .httpOnly(false)
                 .build();
         response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 
