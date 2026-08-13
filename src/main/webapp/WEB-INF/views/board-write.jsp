@@ -546,6 +546,8 @@
         submitBtn.disabled = true;
         submitBtn.innerText = '등록 중...';
 
+        var csrfVal = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : '';
+
         // 1단계: 파일이 선택되어 있으면 /api/file/upload 먼저 실행
         var uploadPromise = Promise.resolve(null);
 
@@ -553,8 +555,16 @@
             submitBtn.innerText = '파일 업로드 중...';
             var formData = new FormData();
             formData.append('file', file);
+            if (csrfVal) {
+                formData.append('csrfToken', csrfVal);
+            }
 
-            uploadPromise = fetch('/api/file/upload', {
+            var uploadUrl = '/api/file/upload';
+            if (csrfVal) {
+                uploadUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
+            }
+
+            uploadPromise = fetch(uploadUrl, {
                 method: 'POST',
                 body: formData
             })
@@ -575,7 +585,6 @@
 
                 var finalContent = content;
 
-                var csrfVal = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : '';
                 var payload = {
                     title: title,
                     content: finalContent,

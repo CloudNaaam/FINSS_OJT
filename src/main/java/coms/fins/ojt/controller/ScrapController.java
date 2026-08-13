@@ -66,7 +66,7 @@ public class ScrapController {
 
             if (is == null) {
                 return ResponseEntity.status(responseCode)
-                        .contentType(MediaType.TEXT_PLAIN)
+                        .contentType(new MediaType("text", "plain", StandardCharsets.UTF_8))
                         .body("Error: 페이지 응답을 읽을 수 없습니다. (HTTP " + responseCode + ")");
             }
 

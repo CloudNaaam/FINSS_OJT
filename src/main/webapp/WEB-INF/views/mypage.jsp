@@ -679,7 +679,12 @@
             csrfToken: csrfVal
         };
 
-        fetch('/api/point/send', {
+        var pointSendUrl = '/api/point/send';
+        if (csrfVal) {
+            pointSendUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
+        }
+
+        fetch(pointSendUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
