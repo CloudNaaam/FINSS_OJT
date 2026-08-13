@@ -437,6 +437,8 @@
 
     <main class="detail-area" id="detailContainer">
         <div style="padding: 40px 0; text-align: center; color: #888;">게시글을 불러오는 중...</div>
+        <!-- 💡 세션 CSRF 토큰 직접 주입 -->
+        <input type="hidden" id="csrfToken" value="${sessionScope.CSRF_TOKEN}">
     </main>
 
     <nav class="bottom-nav" aria-label="하단 메뉴">
@@ -448,6 +450,7 @@
 </div>
 
 <script>
+    window.sessionCsrfToken = "${sessionScope.CSRF_TOKEN}";
     var currentComments = [];
 
     function getBoardIdFromPath() {
@@ -549,12 +552,18 @@
     function handleDelete(boardId) {
         if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
 
+        var csrfVal = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : (window.sessionCsrfToken || '');
+
         fetch('/api/board/delete', {
             method: 'DELETE',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfVal
             },
-            body: JSON.stringify({ board_id: boardId })
+            body: JSON.stringify({
+                board_id: boardId,
+                csrfToken: csrfVal
+            })
         })
         .then(function(res) { return res.json(); })
         .then(function(data) {
@@ -562,7 +571,7 @@
                 alert('게시글이 삭제되었습니다.');
                 location.href = '/board';
             } else {
-                alert('게시글 삭제 처리에 실패했습니다.');
+                alert('게시글 삭제 처리에 실패했습니다: ' + (data.message || '삭제 권한이 없거나 이미 삭제된 글입니다.'));
             }
         })
         .catch(function(err) {

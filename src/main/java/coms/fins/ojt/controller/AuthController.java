@@ -92,7 +92,7 @@ public class AuthController {
                     .path("/")
                     .maxAge(60 * 60 * 24 * 7) // 7일 유지
                     .sameSite("Lax")          // SameSite=Lax 적용
-                    .httpOnly(true)           // 💡 HttpOnly 적용
+                    .httpOnly(true)           // 💡 HttpOnly 적용 (보안 강화를 위해 JS 접근 금지)
                     .build();
             response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 
