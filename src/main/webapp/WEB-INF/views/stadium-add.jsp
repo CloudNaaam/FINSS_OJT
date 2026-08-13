@@ -345,13 +345,10 @@
             '    <notice>' + escapeXml(notice) + '</notice>\n' +
             '</ground>';
 
-        var csrfVal = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : '';
-
         fetch('/api/ground/add', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/xml; charset=UTF-8',
-                'X-CSRF-TOKEN': csrfVal
+                'Content-Type': 'application/xml; charset=UTF-8'
             },
             body: xmlPayload
         })

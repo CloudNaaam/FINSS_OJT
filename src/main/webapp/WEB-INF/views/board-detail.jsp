@@ -557,8 +557,7 @@
         fetch('/api/board/delete', {
             method: 'DELETE',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfVal
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 board_id: boardId,

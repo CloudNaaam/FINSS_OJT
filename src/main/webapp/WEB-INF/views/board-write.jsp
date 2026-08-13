@@ -561,9 +561,6 @@
 
             uploadPromise = fetch('/api/file/upload', {
                 method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfVal
-                },
                 body: formData
             })
             .then(function(res) { return res.json(); })
@@ -593,8 +590,7 @@
                 return fetch('/api/board/write', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfVal
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(payload)
                 });

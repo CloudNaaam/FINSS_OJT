@@ -377,6 +377,20 @@
             padding: 24px;
             overflow: hidden;
         }
+
+        .user-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+        }
     </style>
 </head>
 <body>
@@ -500,8 +514,8 @@
 </div>
 
 <!-- 🎁 포인트 선물하기 모달 -->
-<div id="pointSendModal" class="user-modal-backdrop" style="display: none;">
-    <div class="user-modal-content" style="max-width: 400px; padding: 24px; border-radius: 16px; background: #fff;">
+<div id="pointSendModal" class="user-modal-backdrop" onclick="closePointModalOnBackdrop(event)" style="display: none;">
+    <div class="user-modal-content" onclick="event.stopPropagation()" style="width: min(90%, 400px); padding: 24px; border-radius: 20px; background: #fff; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
         <h3 style="margin-top:0; font-size:18px; font-weight:800; color:#1e293b;">🎁 포인트 선물하기</h3>
         <p style="font-size:13px; color:#64748b; margin-bottom:16px;">다른 회원에게 포인트를 선물하세요.</p>
         <form id="pointSendForm" onsubmit="handleSendPoint(event)">
@@ -539,11 +553,8 @@
         var csrfVal = document.getElementById('pointCsrfToken') ? document.getElementById('pointCsrfToken').value : (window.sessionCsrfToken || '');
         if (csrfVal) formData.append('csrfToken', csrfVal);
 
-        fetch('/api/profile/imgup', {
+        fetch('/api/user/profile-img', {
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrfVal
-            },
             body: formData
         })
         .then(function(res) {
@@ -570,13 +581,8 @@
     function deleteProfileImage() {
         if (!confirm('프로필 사진을 삭제하시겠습니까?')) return;
 
-        var csrfVal = document.getElementById('pointCsrfToken') ? document.getElementById('pointCsrfToken').value : (window.sessionCsrfToken || '');
-
-        fetch('/api/profile/imagedel', {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': csrfVal
-            }
+        fetch('/api/user/profile-img', {
+            method: 'DELETE'
         })
         .then(function(res) { return res.json(); })
         .then(function(data) {
@@ -684,12 +690,20 @@
 
     function openPointModal() {
         var modal = document.getElementById('pointSendModal');
-        if (modal) modal.style.display = 'grid';
+        if (modal) modal.style.display = 'flex';
+        var input = document.getElementById('sendToInput');
+        if (input) setTimeout(function(){ input.focus(); }, 100);
     }
 
     function closePointModal() {
         var modal = document.getElementById('pointSendModal');
         if (modal) modal.style.display = 'none';
+    }
+
+    function closePointModalOnBackdrop(e) {
+        if (e.target && e.target.id === 'pointSendModal') {
+            closePointModal();
+        }
     }
 
     function handleSendPoint(e) {
@@ -717,8 +731,7 @@
         fetch('/api/point/send', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfVal
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
         })
