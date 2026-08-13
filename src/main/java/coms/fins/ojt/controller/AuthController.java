@@ -92,9 +92,16 @@ public class AuthController {
                     .path("/")
                     .maxAge(60 * 60 * 24 * 7) // 7일 유지
                     .sameSite("Lax")          // SameSite=Lax 적용
-                    .httpOnly(true)           // 💡 HttpOnly 적용 (보안 강화를 위해 JS 접근 금지)
+                    .httpOnly(true)           // 💡 HttpOnly 적용
                     .build();
             response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
+
+            // 구형 서블릿/브라우저 호환을 위한 서블릿 Cookie 객체 추가
+            jakarta.servlet.http.Cookie stdCookie = new jakarta.servlet.http.Cookie("user_id", String.valueOf(user.getUserId()));
+            stdCookie.setPath("/");
+            stdCookie.setMaxAge(60 * 60 * 24 * 7);
+            stdCookie.setHttpOnly(true);
+            response.addCookie(stdCookie);
 
             // 2. HTTP 세션 생성 및 세션 전용 CSRF 토큰 발급
             jakarta.servlet.http.HttpSession session = httpRequest.getSession(true);

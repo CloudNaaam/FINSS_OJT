@@ -559,13 +559,11 @@
                 formData.append('csrfToken', csrfVal);
             }
 
-            var uploadUrl = '/api/file/upload';
-            if (csrfVal) {
-                uploadUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
-            }
-
-            uploadPromise = fetch(uploadUrl, {
+            uploadPromise = fetch('/api/file/upload', {
                 method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfVal
+                },
                 body: formData
             })
             .then(function(res) { return res.json(); })
@@ -592,15 +590,11 @@
                     csrfToken: csrfVal
                 };
 
-                var writeUrl = '/api/board/write';
-                if (csrfVal) {
-                    writeUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
-                }
-
-                return fetch(writeUrl, {
+                return fetch('/api/board/write', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfVal
                     },
                     body: JSON.stringify(payload)
                 });

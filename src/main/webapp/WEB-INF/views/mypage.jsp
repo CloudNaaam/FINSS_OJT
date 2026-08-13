@@ -512,12 +512,14 @@
         var formData = new FormData();
         formData.append('profile_img', file);
 
-        var csrfVal = window.sessionCsrfToken || '';
-        var imgUpUrl = '/api/profile/imgup';
-        if (csrfVal) imgUpUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
+        var csrfVal = document.getElementById('pointCsrfToken') ? document.getElementById('pointCsrfToken').value : (window.sessionCsrfToken || '');
+        if (csrfVal) formData.append('csrfToken', csrfVal);
 
-        fetch(imgUpUrl, {
+        fetch('/api/profile/imgup', {
             method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfVal
+            },
             body: formData
         })
         .then(function(res) {
@@ -544,12 +546,13 @@
     function deleteProfileImage() {
         if (!confirm('프로필 사진을 삭제하시겠습니까?')) return;
 
-        var csrfVal = window.sessionCsrfToken || '';
-        var imgDelUrl = '/api/profile/imagedel';
-        if (csrfVal) imgDelUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
+        var csrfVal = document.getElementById('pointCsrfToken') ? document.getElementById('pointCsrfToken').value : (window.sessionCsrfToken || '');
 
-        fetch(imgDelUrl, {
-            method: 'DELETE'
+        fetch('/api/profile/imagedel', {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfVal
+            }
         })
         .then(function(res) { return res.json(); })
         .then(function(data) {
@@ -679,15 +682,11 @@
             csrfToken: csrfVal
         };
 
-        var pointSendUrl = '/api/point/send';
-        if (csrfVal) {
-            pointSendUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
-        }
-
-        fetch(pointSendUrl, {
+        fetch('/api/point/send', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfVal
             },
             body: JSON.stringify(payload)
         })

@@ -33,8 +33,14 @@ public class CsrfInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // HTML Form 데이터 (name="csrfToken") 추출
-        String clientToken = request.getParameter("csrfToken");
+        // 클라이언트 토큰 추출: Custom Header (X-CSRF-TOKEN) -> Form Body (csrfToken)
+        String clientToken = request.getHeader("X-CSRF-TOKEN");
+        if (clientToken == null || clientToken.isBlank()) {
+            clientToken = request.getHeader("X-XSRF-TOKEN");
+        }
+        if (clientToken == null || clientToken.isBlank()) {
+            clientToken = request.getParameter("csrfToken");
+        }
 
         // 세션에 저장된 CSRF 토큰 추출
         jakarta.servlet.http.HttpSession session = request.getSession(false);

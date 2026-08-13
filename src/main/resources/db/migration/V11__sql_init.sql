@@ -16,7 +16,7 @@ CREATE TABLE users (
     point          NUMBER DEFAULT 1000 NOT NULL,
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
-    CONSTRAINT pk_users PRIMARY KEY (user_id),
+    CONSTRAINT pk_users PRIMARY KEY (user_id),NUMBER DEFAULT 1000 NOT NULL
     CONSTRAINT uq_users_username UNIQUE (username),
     CONSTRAINT ck_users_is_admin CHECK (is_admin IN (0, 1)),
     CONSTRAINT ck_users_is_manager CHECK (is_manager IN (0, 1))

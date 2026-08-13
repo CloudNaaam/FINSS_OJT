@@ -346,15 +346,12 @@
             '</ground>';
 
         var csrfVal = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : '';
-        var targetUrl = '/api/ground/add';
-        if (csrfVal) {
-            targetUrl += '?csrfToken=' + encodeURIComponent(csrfVal);
-        }
 
-        fetch(targetUrl, {
+        fetch('/api/ground/add', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/xml; charset=UTF-8'
+                'Content-Type': 'application/xml; charset=UTF-8',
+                'X-CSRF-TOKEN': csrfVal
             },
             body: xmlPayload
         })
