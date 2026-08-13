@@ -360,6 +360,96 @@
             background: #ef4444;
             color: #fff;
         }
+
+        /* 💡 카카오/티스토리 스타일 OpenGraph figure 카드 CSS */
+        figure[data-ke-type="opengraph"] {
+            margin: 14px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+            text-align: left;
+            display: block;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        figure[data-ke-type="opengraph"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+        figure[data-ke-type="opengraph"] a {
+            display: flex;
+            text-decoration: none;
+            color: inherit;
+            min-height: 96px;
+        }
+        figure[data-ke-type="opengraph"] .og-image {
+            width: 128px;
+            min-width: 128px;
+            background-size: cover;
+            background-position: center;
+            background-color: #f1f5f9;
+            flex-shrink: 0;
+        }
+        figure[data-ke-type="opengraph"] .og-text {
+            padding: 12px 16px;
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        figure[data-ke-type="opengraph"] .og-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 4px 0;
+            line-height: 1.35;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        figure[data-ke-type="opengraph"] .og-desc {
+            font-size: 12px;
+            color: #64748b;
+            margin: 0 0 6px 0;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        figure[data-ke-type="opengraph"] .og-host {
+            font-size: 11px;
+            color: #94a3b8;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        /* 💡 리치 텍스트 에디터 스타일 */
+        .rich-editor {
+            min-height: 240px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: #fff;
+            padding: 14px 16px;
+            line-height: 1.6;
+            outline: none;
+            cursor: text;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+        }
+        .rich-editor:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(21,112,255,0.1);
+        }
+        .rich-editor[contenteditable="true"]:empty:before {
+            content: attr(placeholder);
+            color: #94a3b8;
+            pointer-events: none;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -396,8 +486,8 @@
 
             <div class="form-group">
                 <label for="content">내용</label>
-                <textarea id="content" class="form-control" placeholder="내용을 작성하세요 (URL 입력 시 링크 카드 자동 감지)" required></textarea>
-                <!-- URL OG Link Preview Card Render Container -->
+                <!-- 💡 실시간 카드 렌더링을 위한 contenteditable 리치 에디터 -->
+                <div id="content" class="rich-editor" contenteditable="true" placeholder="내용을 작성해보세요..."></div>
                 <div id="ogCardContainer"></div>
             </div>
 
@@ -438,12 +528,17 @@
         e.preventDefault();
 
         var title = document.getElementById('title').value.trim();
-        var content = document.getElementById('content').value.trim();
+        var contentElem = document.getElementById('content');
+        var content = contentElem ? contentElem.innerHTML.trim() : '';
         var fileInput = document.getElementById('fileInput');
         var file = fileInput.files[0];
 
-        if (!title || !content) {
-            alert('제목과 내용을 모두 입력해 주세요.');
+        if (!title) {
+            alert('제목을 입력해주세요.');
+            return;
+        }
+        if (!content || content === '<br>') {
+            alert('내용을 입력해주세요.');
             return;
         }
 
@@ -478,19 +573,7 @@
             .then(function(fileUuid) {
                 submitBtn.innerText = '게시글 저장 중...';
 
-                // 스크랩된 OG 미리보기 카드가 있으면 본문 내용에 깔끔한 링크 카드로 포함
                 var finalContent = content;
-                if (currentOgData) {
-                    var cardHtml = '\n\n<div class="og-embedded-card" style="margin-top: 16px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; display: flex; gap: 12px; align-items: center;">' +
-                        (currentOgData.image ? '<img src="' + escapeHtml(currentOgData.image) + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">' : '') +
-                        '<div>' +
-                            '<div style="font-size: 11px; font-weight: 700; color: #1570ff;">🌐 ' + escapeHtml(currentOgData.site_name || currentOgData.domain) + '</div>' +
-                            '<div style="font-size: 14px; font-weight: 700; margin: 2px 0;"><a href="' + escapeHtml(currentOgData.url) + '" target="_blank" style="color: #22252b; text-decoration: none;">' + escapeHtml(currentOgData.title) + '</a></div>' +
-                            '<div style="font-size: 12px; color: #64748b;">' + escapeHtml(currentOgData.description) + '</div>' +
-                        '</div>' +
-                    '</div>';
-                    finalContent += cardHtml;
-                }
 
                 var csrfVal = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : '';
                 var payload = {
@@ -541,60 +624,139 @@
 
     var contentInput = document.getElementById('content');
     if (contentInput) {
-        contentInput.addEventListener('input', function() {
+        contentInput.addEventListener('keyup', function() {
             clearTimeout(scrapTimer);
-            scrapTimer = setTimeout(detectAndScrapUrl, 400);
+            scrapTimer = setTimeout(detectAndScrapUrl, 300);
         });
     }
 
     function detectAndScrapUrl() {
-        var text = contentInput.value;
-        var urlRegex = /(https?:\/\/[^\s]+)/i;
+        var text = contentInput.innerText || contentInput.textContent || '';
+        // 💡 URL 입력 후 엔터(\n|\r)나 공백이 뒤따라올 때만 URL 감지
+        var urlRegex = /(https?:\/\/[^\s\r\n]+)(?:[\r\n\s]+)/i;
         var match = text.match(urlRegex);
 
         if (!match) return;
 
-        var detectedUrl = match[0].trim();
+        var detectedUrl = match[1].trim();
         if (detectedUrl === lastScrappedUrl) return;
 
         lastScrappedUrl = detectedUrl;
         var container = document.getElementById('ogCardContainer');
-        if (container) {
-            container.innerHTML = '<div style="font-size: 12px; color: var(--blue); margin-top: 8px;">🔍 URL 스크랩 중... (' + escapeHtml(detectedUrl) + ')</div>';
-        }
 
+        // 💡 HTML 전문 반환 API (/api/scrap) 호출
         fetch('/api/scrap?url=' + encodeURIComponent(detectedUrl))
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data && data.success) {
-                    currentOgData = data;
-                    renderOgCard(data);
-                } else {
+            .then(function(res) { return res.text(); })
+            .then(function(htmlText) {
+                if (!htmlText || htmlText.startsWith('Error:')) {
                     if (container) container.innerHTML = '';
+                    return;
                 }
+
+                // 💡 수신한 HTML 전문 텍스트를 자바스크립트 DOMParser로 직접 파싱
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(htmlText, 'text/html');
+
+                // 1. 도메인 추출
+                var domain = '';
+                try {
+                    domain = new URL(detectedUrl).hostname;
+                } catch(e) { domain = detectedUrl; }
+
+                // 2. 제목 (og:title -> <title> 태그)
+                var titleMeta = doc.querySelector('meta[property="og:title"]') || doc.querySelector('meta[name="og:title"]');
+                var title = titleMeta ? titleMeta.getAttribute('content') : (doc.title || domain);
+
+                // 3. 설명 (og:description -> <meta name="description">)
+                var descMeta = doc.querySelector('meta[property="og:description"]') || doc.querySelector('meta[name="description"]');
+                var description = descMeta ? descMeta.getAttribute('content') : '';
+
+                // 4. 썸네일 이미지 (og:image)
+                var imgMeta = doc.querySelector('meta[property="og:image"]') || doc.querySelector('meta[name="og:image"]');
+                var image = imgMeta ? imgMeta.getAttribute('content') : '';
+
+                // 상대 경로 이미지 주소를 절대 경로로 전환
+                if (image && !image.startsWith('http://') && !image.startsWith('https://')) {
+                    try {
+                        var baseUrl = new URL(detectedUrl);
+                        if (image.startsWith('/')) {
+                            image = baseUrl.origin + image;
+                        } else {
+                            image = baseUrl.origin + '/' + image;
+                        }
+                    } catch(e) {}
+                }
+
+                // 5. 사이트 이름 (og:site_name -> domain)
+                var siteMeta = doc.querySelector('meta[property="og:site_name"]');
+                var siteName = siteMeta ? siteMeta.getAttribute('content') : domain;
+
+                var ogData = {
+                    url: detectedUrl,
+                    domain: domain,
+                    title: title ? title.trim() : domain,
+                    description: description ? description.trim() : '',
+                    image: image ? image.trim() : '',
+                    site_name: siteName ? siteName.trim() : domain
+                };
+
+                currentOgData = ogData;
+                insertOgCardDirectlyIntoContent(ogData);
+                renderOgCard(ogData);
             })
             .catch(function(err) {
-                console.error('OG 스크랩 실패:', err);
+                console.error('HTML 스크랩 및 메타데이터 파싱 실패:', err);
                 if (container) container.innerHTML = '';
             });
+    }
+
+    // 💡 작성 중인 리치 에디터(contenteditable) 내부의 URL 바로 아래에 시각적 <figure> 카드 UI 노드를 즉시 삽입하는 함수
+    function insertOgCardDirectlyIntoContent(og) {
+        if (!contentInput) return;
+
+        // 이미 생성된 동종 링크 카드가 존재하는지 확인
+        if (contentInput.querySelector('figure[data-og-source-url="' + CSS.escape(og.url) + '"]') ||
+            contentInput.innerHTML.indexOf(og.url) === -1) {
+            return;
+        }
+
+        var figId = "og_" + new Date().getTime();
+        var figureCardHtml = '<figure contenteditable="false" id="' + figId + '" data-ke-type="opengraph" data-ke-align="alignCenter" data-og-type="website" data-og-title="' + escapeHtml(og.title) + '" data-og-description="' + escapeHtml(og.description) + '" data-og-host="' + escapeHtml(og.domain) + '" data-og-source-url="' + escapeHtml(og.url) + '" data-og-url="' + escapeHtml(og.url) + '" data-og-image="' + escapeHtml(og.image) + '">' +
+                '<a href="' + escapeHtml(og.url) + '" target="_blank" data-source-url="' + escapeHtml(og.url) + '">' +
+                    '<div class="og-image" style="background-image:url(\'' + escapeHtml(og.image) + '\')"></div>' +
+                    '<div class="og-text">' +
+                        '<p class="og-title">' + escapeHtml(og.title || og.domain) + '</p>' +
+                        '<p class="og-desc">' + escapeHtml(og.description) + '</p>' +
+                        '<p class="og-host">' + escapeHtml(og.domain) + '</p>' +
+                    '</div>' +
+                '</a>' +
+            '</figure><div><br></div>';
+
+        // HTML 에디터 내부에서 URL 위치 바로 뒤에 시각적 카드를 삽입
+        var currentHtml = contentInput.innerHTML;
+        if (currentHtml.indexOf(og.url) !== -1) {
+            contentInput.innerHTML = currentHtml.replace(og.url, og.url + '<br>' + figureCardHtml);
+        }
     }
 
     function renderOgCard(og) {
         var container = document.getElementById('ogCardContainer');
         if (!container) return;
 
-        var imgHtml = og.image ? '<img src="' + escapeHtml(og.image) + '" class="og-preview-img" alt="썸네일" onerror="this.style.display=\'none\'">' : '';
-        var siteStr = og.site_name || og.domain || '웹사이트';
-
+        var figId = "og_" + new Date().getTime();
         var cardHtml = 
-            '<div class="og-preview-card" target="_blank">' +
-                '<button type="button" class="og-close-btn" onclick="removeOgCard(event)" title="링크 카드 닫기">✕</button>' +
-                imgHtml +
-                '<div class="og-preview-info">' +
-                    '<div class="og-preview-site">🌐 ' + escapeHtml(siteStr) + '</div>' +
-                    '<h4 class="og-preview-title">' + escapeHtml(og.title || og.url) + '</h4>' +
-                    '<p class="og-preview-desc">' + escapeHtml(og.description || '내용 요약 없음') + '</p>' +
-                '</div>' +
+            '<div style="position:relative;">' +
+                '<button type="button" class="og-close-btn" onclick="removeOgCard(event)" title="링크 카드 닫기" style="z-index:10; top:4px; right:4px;">✕</button>' +
+                '<figure contenteditable="false" id="' + figId + '" data-ke-type="opengraph" data-ke-align="alignCenter" data-og-type="website" data-og-title="' + escapeHtml(og.title) + '" data-og-description="' + escapeHtml(og.description) + '" data-og-host="' + escapeHtml(og.domain) + '" data-og-source-url="' + escapeHtml(og.url) + '" data-og-url="' + escapeHtml(og.url) + '" data-og-image="' + escapeHtml(og.image) + '">' +
+                    '<a href="' + escapeHtml(og.url) + '" target="_blank" data-source-url="' + escapeHtml(og.url) + '">' +
+                        '<div class="og-image" style="background-image:url(\'' + escapeHtml(og.image) + '\')"></div>' +
+                        '<div class="og-text">' +
+                            '<p class="og-title">' + escapeHtml(og.title || og.domain) + '</p>' +
+                            '<p class="og-desc">' + escapeHtml(og.description) + '</p>' +
+                            '<p class="og-host">' + escapeHtml(og.domain) + '</p>' +
+                        '</div>' +
+                    '</a>' +
+                '</figure>' +
             '</div>';
 
         container.innerHTML = cardHtml;
