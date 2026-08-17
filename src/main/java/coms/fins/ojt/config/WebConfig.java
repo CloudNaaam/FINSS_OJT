@@ -71,7 +71,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(org.springframework.web.servlet.config.annotation.CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins("http://192.168.21.218:8080", "http://192.168.21.218:8082", "http://localhost:8080", "http://localhost:8082")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "TRACE")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }

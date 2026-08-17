@@ -86,13 +86,13 @@ public class AuthController {
                 return ResponseEntity.ok(result);
             }
 
-            // 1. user_id 쿠키 설정 (HttpOnly=false, SameSite=Lax 적용)
+            // 1. user_id 쿠키 설정 (HttpOnly=true, SameSite=Lax 적용)
             org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
                     .from("user_id", String.valueOf(user.getUserId()))
                     .path("/")
                     .maxAge(60 * 60 * 24 * 7) // 7일 유지
                     .sameSite("Lax")          // SameSite=Lax 적용
-                    .httpOnly(false)          // JS 접근 허용 (HttpOnly 미적용)
+                    .httpOnly(true)           // XSS 방지 (HttpOnly 적용)
                     .build();
             response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 
@@ -122,13 +122,13 @@ public class AuthController {
             jakarta.servlet.http.HttpServletRequest httpRequest,
             jakarta.servlet.http.HttpServletResponse response) {
 
-        // 1. user_id 쿠키 제거 (SameSite=Lax, HttpOnly=false)
+        // 1. user_id 쿠키 제거 (SameSite=Lax, HttpOnly=true)
         org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
                 .from("user_id", "")
                 .path("/")
                 .maxAge(0)
                 .sameSite("Lax")
-                .httpOnly(false)
+                .httpOnly(true)
                 .build();
         response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 

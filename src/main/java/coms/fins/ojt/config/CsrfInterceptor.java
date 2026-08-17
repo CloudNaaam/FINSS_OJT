@@ -23,8 +23,8 @@ public class CsrfInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String method = request.getMethod();
 
-        // GET, HEAD, OPTIONS 등의 읽기 요청 및 토큰 발급/로그인 API는 검증 제외
-        if ("GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method) || "OPTIONS".equalsIgnoreCase(method)) {
+        // GET, HEAD, OPTIONS, TRACE 등의 읽기 요청 및 토큰 발급/로그인 API는 검증 제외
+        if ("GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method) || "OPTIONS".equalsIgnoreCase(method) || "TRACE".equalsIgnoreCase(method)) {
             return true;
         }
 
