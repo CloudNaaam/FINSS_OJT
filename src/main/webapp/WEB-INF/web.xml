@@ -5,6 +5,42 @@
                              https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
          version="6.0">
 
+    <!-- Filter Mappings (Execute before any Servlet) -->
+    <filter>
+        <filter-name>characterEncodingFilter</filter-name>
+        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>characterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>traceFilter</filter-name>
+        <filter-class>coms.fins.ojt.config.TraceFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>traceFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>sqlInjectionFilter</filter-name>
+        <filter-class>coms.fins.ojt.config.SqlInjectionFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>sqlInjectionFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
     <!-- 1. /uploads 및 /resources 전용 디렉터리 인덱싱 서블릿 (루트 '/' 간섭 방지를 위해 별도 서블릿 이름 지정) -->
     <servlet>
         <servlet-name>DirectoryListingServlet</servlet-name>
