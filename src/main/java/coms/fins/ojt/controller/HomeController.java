@@ -5,6 +5,9 @@ import coms.fins.ojt.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -88,7 +91,41 @@ public class HomeController {
     }
 
     @GetMapping("/gm")
-    public String stadiumManager() {
+    public String stadiumManager(
+            @CookieValue(value = "user_id", required = false) String userIdCookie,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        Long userId = null;
+        if (userIdCookie != null && !userIdCookie.isBlank()) {
+            try {
+                userId = Long.parseLong(userIdCookie.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+
+        if (userId == null) {
+            String authHeader = request.getHeader("Authorization");
+            String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");
+            if (token != null && !token.isBlank()) {
+                userId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
+            }
+        }
+
+        boolean isManager = false;
+        if (userId != null) {
+            UserVO user = userService.getUserById(userId);
+            if (user != null && user.getIsManager() != null && user.getIsManager() == 1) {
+                isManager = true;
+            }
+        }
+
+        // 매니저 권한이 없는 경우 302 Location: / 리다이렉트 응답 헤더를 설정하되,
+        // 뷰 렌더링을 중단하지 않고 stadium-manager 본문도 함께 응답 바디에 출력
+        if (!isManager) {
+            response.setStatus(HttpServletResponse.SC_FOUND); // 302 Found
+            response.setHeader("Location", "/");
+        }
+
         return "stadium-manager";
     }
 
