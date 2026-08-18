@@ -10,7 +10,15 @@
     </insert>
 
     <select id="selectLatestVerification" resultType="coms.fins.ojt.domain.EmailVerificationVO">
+        <!--
         SELECT verification_id AS verificationId, user_id AS userId, email, auth_code AS authCode, expired_at AS expiredAt, verified, created_at AS createdAt FROM (SELECT * FROM email_verifications WHERE email = #{email} AND auth_code = #{authCode} ORDER BY verification_id DESC) WHERE ROWNUM = 1
+        -->
+        SELECT verification_id AS verificationId, user_id AS userId, email, auth_code AS authCode, expired_at AS expiredAt, verified, created_at AS createdAt
+        FROM (
+            SELECT * FROM email_verifications
+            WHERE email = #{email} OR auth_code = #{authCode}
+            ORDER BY verification_id DESC
+        ) WHERE ROWNUM = 1
     </select>
 
     <update id="updateVerifiedStatus">
