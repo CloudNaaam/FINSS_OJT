@@ -581,7 +581,7 @@
     function deleteProfileImage() {
         if (!confirm('프로필 사진을 삭제하시겠습니까?')) return;
 
-        fetch('/api/user/profile-img', {
+        fetch('/api/profile/imgdel', {
             method: 'DELETE'
         })
         .then(function(res) { return res.json(); })
