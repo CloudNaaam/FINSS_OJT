@@ -229,6 +229,7 @@
         </section>
 
         <form id="findPwForm" novalidate>
+            <input type="hidden" name="csrfToken" id="csrfToken" value="${sessionScope.CSRF_TOKEN}">
             <!-- 1. 아이디 (username) -->
             <div class="field">
                 <label class="field-label" for="username">아이디</label>
@@ -304,6 +305,8 @@
         emailHelp.textContent = "아이디와 이메일 매칭 정보를 확인 중입니다...";
         emailHelp.className = "help";
 
+        const csrfVal = document.getElementById("csrfToken") ? document.getElementById("csrfToken").value : "${sessionScope.CSRF_TOKEN}";
+
         // /api/findpw/match API 호출 (DB 조회: SELECT username FROM users WHERE email='${email}')
         fetch('/api/findpw/match', {
             method: 'POST',
@@ -312,7 +315,8 @@
             },
             body: JSON.stringify({
                 username: userVal,
-                email: emailVal
+                email: emailVal,
+                csrfToken: csrfVal
             })
         }).catch(function(e) {});
 
@@ -323,7 +327,8 @@
             },
             body: JSON.stringify({
                 username: userVal,
-                email: emailVal
+                email: emailVal,
+                csrfToken: csrfVal
             })
         })
         .then(function(res) { return res.json(); })
@@ -372,12 +377,47 @@
             return;
         }
 
-        // 세션 및 URL 파라미터 전달 후 임시 비밀번호 발급 페이지로 이동
-        sessionStorage.setItem("findpw_username", userVal);
-        sessionStorage.setItem("findpw_email", emailVal);
+        const submitBtn = document.getElementById("submitBtn");
+        submitBtn.disabled = true;
+        submitBtn.innerText = "확인 중...";
 
-        const targetUrl = "/findpw/temp_pw?username=" + encodeURIComponent(userVal) + "&email=" + encodeURIComponent(emailVal);
-        window.location.href = targetUrl;
+        // /api/findpw/auth_code 인증 코드 검증 호출
+        fetch('/api/findpw/auth_code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: emailVal,
+                code: codeVal,
+                auth_code: codeVal,
+                username: userVal
+            })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "코드 확인하기";
+
+            if (data && data.success) {
+                // 세션 및 URL 파라미터 전달 후 임시 비밀번호 발급 페이지로 이동
+                sessionStorage.setItem("findpw_username", userVal);
+                sessionStorage.setItem("findpw_email", emailVal);
+
+                const targetUrl = "/findpw/temp_pw?username=" + encodeURIComponent(userVal) + "&email=" + encodeURIComponent(emailVal);
+                window.location.href = targetUrl;
+            } else {
+                alert("❌ 인증 코드가 올바르지 않거나 만료되었습니다.");
+                codeHelp.textContent = "인증 코드가 올바르지 않거나 만료되었습니다.";
+                codeHelp.className = "help error";
+                authCode.focus();
+            }
+        })
+        .catch(function(err) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "코드 확인하기";
+            alert("❌ 인증 코드 확인 중 오류가 발생했습니다.");
+        });
     });
 </script>
 </body>

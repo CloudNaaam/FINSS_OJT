@@ -278,6 +278,7 @@
     </main>
 </div>
 
+<input type="hidden" id="csrfToken" value="${sessionScope.CSRF_TOKEN}">
 <div class="toast" id="toast">임시 비밀번호가 복사되었습니다.</div>
 
 <script>
@@ -298,6 +299,8 @@
             return;
         }
 
+        const csrfVal = document.getElementById("csrfToken") ? document.getElementById("csrfToken").value : "${sessionScope.CSRF_TOKEN}";
+
         fetch('/api/findpw/temp_pw', {
             method: 'POST',
             headers: {
@@ -305,7 +308,8 @@
             },
             body: JSON.stringify({
                 username: username,
-                email: email
+                email: email,
+                csrfToken: csrfVal
             })
         })
         .then(function(res) { return res.json(); })
