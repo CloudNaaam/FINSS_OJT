@@ -553,7 +553,7 @@
         var csrfVal = document.getElementById('pointCsrfToken') ? document.getElementById('pointCsrfToken').value : (window.sessionCsrfToken || '');
         if (csrfVal) formData.append('csrfToken', csrfVal);
 
-        fetch('/api/user/profile-img', {
+        fetch('/api/profile/imgup', {
             method: 'POST',
             body: formData
         })
