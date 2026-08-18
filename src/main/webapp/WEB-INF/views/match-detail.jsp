@@ -345,7 +345,7 @@
     <main>
         <!-- 배너 이미지 -->
         <section class="visual-banner">
-            <img class="visual-img" id="fieldPhoto" src="https://i.namu.wiki/i/lQIGadGVZtfkSOOba-BOK0J0NpytK5Ur9E3phQeFThfpxuDNKv0c0-rdFmNw5F6fOehk0-kFKCGrDFOeD51S9A.webp" alt="구장 전경">
+            <img class="visual-img" id="fieldPhoto" src="/resources/images/ground-default.jpg" alt="구장 전경">
             <span class="visual-badge" id="fieldLocationBadge">경기장 위치</span>
         </section>
 

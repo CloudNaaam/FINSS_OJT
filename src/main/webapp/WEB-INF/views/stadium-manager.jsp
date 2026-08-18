@@ -519,7 +519,7 @@
                 var html = '';
                 grounds.forEach(function(g) {
                     var isIndoorStr = (g.isIndoor === 1) ? '실내 구장' : ((g.isIndoor === 2) ? '천막/그늘막' : '야외 구장');
-                    var photoUrl = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&auto=format&fit=crop&q=80';
+                    var photoUrl = '/resources/images/ground-default.jpg';
 
                     html += '<div class="stadium-card">' +
                                 '<img src="' + photoUrl + '" alt="' + (g.name || '구장') + '" class="stadium-thumb">' +

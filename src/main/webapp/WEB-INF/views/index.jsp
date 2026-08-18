@@ -776,7 +776,7 @@
                     var numMembers = m.numMembers || m.num_members || 12;
                     var statusStr = (m.status === 'CLOSED') ? '마감됨' : '신청 가능';
                     var statusClass = (m.status === 'CLOSED') ? 'status closed' : 'status';
-                    var photoUrl = 'https://i.namu.wiki/i/lQIGadGVZtfkSOOba-BOK0J0NpytK5Ur9E3phQeFThfpxuDNKv0c0-rdFmNw5F6fOehk0-kFKCGrDFOeD51S9A.webp';
+                    var photoUrl = '/resources/images/ground-default.jpg';
 
                     html += '<article class="match-card" style="cursor: pointer;" onclick="location.href=\'/matches/' + matchId + '\'">' +
                                 '<div class="time">' + timeStr + '<small>120분</small></div>' +
