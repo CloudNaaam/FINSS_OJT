@@ -62,6 +62,14 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    public static String generateToken(Long userId, String username, boolean isAdmin) {
+        return generateAccessToken(userId, username);
+    }
+
+    public static String generateToken(Long userId, String username) {
+        return generateAccessToken(userId, username);
+    }
+
     /**
      * [LAB ONLY - INTENTIONALLY VULNERABLE]
      *

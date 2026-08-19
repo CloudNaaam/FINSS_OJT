@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -363,6 +363,11 @@
 
             <!-- 제출 버튼 -->
             <button type="submit" class="btn-submit" id="btnSubmit">수정 완료</button>
+
+            <!-- 회원 탈퇴 링크 -->
+            <div style="text-align: center; margin-top: 24px;">
+                <button type="button" onclick="handleWithdrawAccount()" style="background: transparent; border: 0; color: #ef4444; font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer;">회원 탈퇴 (계정 삭제)</button>
+            </div>
         </form>
     </main>
 </div>
@@ -651,6 +656,34 @@
             btn.innerText = "수정 완료";
             console.error("정보 수정 오류:", err);
             alert("정보 수정 중 네트워크 오류가 발생했습니다.");
+        });
+    }
+
+    // 회원 탈퇴 처리
+    function handleWithdrawAccount() {
+        if (!confirm("정말로 회원 탈퇴를 진행하시겠습니까?\n탈퇴 시 모든 정보(매치 내역, 포인트 등)가 삭제되며 복구할 수 없습니다.")) {
+            return;
+        }
+        if (!confirm("마지막 확인: 정말로 계정을 삭제하시겠습니까?")) {
+            return;
+        }
+
+        fetch('/api/profile/withdraw', {
+            method: 'POST'
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.success) {
+                localStorage.removeItem('access_token');
+                alert(data.message || "회원 탈퇴가 완료되었습니다.");
+                location.href = data.redirect_url || "/login";
+            } else {
+                alert(data.message || "회원 탈퇴 처리에 실패했습니다.");
+            }
+        })
+        .catch(function(err) {
+            console.error("탈퇴 오류:", err);
+            alert("회원 탈퇴 처리 중 오류가 발생했습니다.");
         });
     }
 

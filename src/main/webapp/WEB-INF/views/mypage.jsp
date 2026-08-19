@@ -479,6 +479,7 @@
             <li class="menu-item"><a href="/mypage/edit"><span>👤 내 정보 수정</span><span>›</span></a></li>
             <li class="menu-item"><a href="/mypage/edit"><span>🔒 비밀번호 변경</span><span>›</span></a></li>
             <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>🔔 알림 설정</span><span>›</span></a></li>
+            <li class="menu-item"><a href="#" onclick="handleWithdrawAccount()" style="color: #ef4444;"><span>🚪 회원 탈퇴</span><span style="color: #ef4444;">›</span></a></li>
         </ul>
 
         <!-- 핀랩풋볼 카테고리 -->
@@ -900,6 +901,34 @@
             submitBtn.disabled = false;
             submitBtn.innerText = '결제 진행하기';
             alert('요청 처리 중 오류가 발생했습니다.');
+        });
+    }
+
+    // 회원 탈퇴 처리
+    function handleWithdrawAccount() {
+        if (!confirm("정말로 회원 탈퇴를 진행하시겠습니까?\n탈퇴 시 모든 정보(매치 내역, 포인트 등)가 삭제되며 복구할 수 없습니다.")) {
+            return;
+        }
+        if (!confirm("마지막 확인: 정말로 계정을 삭제하시겠습니까?")) {
+            return;
+        }
+
+        fetch('/api/profile/withdraw', {
+            method: 'POST'
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.success) {
+                localStorage.removeItem('access_token');
+                alert(data.message || "회원 탈퇴가 완료되었습니다.");
+                location.href = data.redirect_url || "/login";
+            } else {
+                alert(data.message || "회원 탈퇴 처리에 실패했습니다.");
+            }
+        })
+        .catch(function(err) {
+            console.error("탈퇴 오류:", err);
+            alert("회원 탈퇴 처리 중 오류가 발생했습니다.");
         });
     }
 </script>

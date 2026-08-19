@@ -345,4 +345,38 @@ public class UserService {
             return false;
         }
     }
+
+    /**
+     * 회원 탈퇴 (계정 및 연관 데이터 안전 삭제)
+     */
+    @Transactional
+    public boolean deleteAccount(Long userId) {
+        if (userId == null || userMapper == null) {
+            return false;
+        }
+
+        try {
+            // 1. 매치 참가자 내역 삭제
+            userMapper.deleteMatchParticipantsByUserId(userId);
+
+            // 2. 매치 신청 내역 삭제
+            userMapper.deleteMatchApplicationsByUserId(userId);
+
+            // 3. 포인트 결제 내역 삭제
+            userMapper.deletePointPaymentsByUserId(userId);
+
+            // 4. 작성한 게시글 삭제
+            userMapper.deleteBoardsByWriterId(userId);
+
+            // 5. users 테이블 회원 레코드 최종 삭제
+            int deletedRows = userMapper.deleteUserById(userId);
+            logger.info("회원 탈퇴 처리 완료: userId={}, deletedRows={}", userId, deletedRows);
+
+            return deletedRows > 0;
+
+        } catch (Exception e) {
+            logger.error("회원 탈퇴 처리 중 예외 발생: userId={}", userId, e);
+            throw new RuntimeException("회원 탈퇴 실패: " + e.getMessage(), e);
+        }
+    }
 }

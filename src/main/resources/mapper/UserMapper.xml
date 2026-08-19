@@ -92,4 +92,31 @@
         WHERE user_id = #{userId}
     </update>
 
+    <select id="findByEmail" resultType="coms.fins.ojt.domain.UserVO">
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil, point
+        FROM users
+        WHERE email = #{email}
+        FETCH FIRST 1 ROWS ONLY
+    </select>
+
+    <delete id="deleteUserById">
+        DELETE FROM users WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteMatchParticipantsByUserId">
+        DELETE FROM match_participants WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteMatchApplicationsByUserId">
+        DELETE FROM match_application WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deletePointPaymentsByUserId">
+        DELETE FROM point_payment WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteBoardsByWriterId">
+        DELETE FROM board WHERE writer_id = #{userId}
+    </delete>
+
 </mapper>

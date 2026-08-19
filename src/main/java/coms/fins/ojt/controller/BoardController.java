@@ -102,44 +102,54 @@ public class BoardController {
         return ResponseEntity.ok(detail);
     }
 
-    @DeleteMapping("/api/board/delete")
+    /**
+     * 게시글 삭제 API (DELETE /api/board/delete, DELETE /api/board/{boardId})
+     * [취약점: DELETE 메소드 사용 시 CSRF 토큰 검증 없이 삭제 수행]
+     */
+    @DeleteMapping({"/api/board/delete", "/api/board/{boardId}", "/board/{boardId}"})
     @ResponseBody
     public ResponseEntity<Map<String, Boolean>> deleteBoard(
-            @RequestBody Map<String, Object> requestData,
+            @PathVariable(value = "boardId", required = false) Long pathBoardId,
+            @RequestParam(value = "board_id", required = false) Long queryBoardId,
+            @RequestBody(required = false) Map<String, Object> requestData,
             @CookieValue(value = "user_id", required = false) String userIdCookie,
             HttpServletRequest request) {
 
         Map<String, Boolean> response = new HashMap<>();
 
-        if (userIdCookie == null || userIdCookie.trim().isEmpty()) {
+        Long userId = null;
+        if (userIdCookie != null && !userIdCookie.trim().isEmpty()) {
+            try {
+                userId = Long.parseLong(userIdCookie.trim());
+            } catch (Exception ignored) {}
+        }
+        if (userId == null) {
+            String authHeader = request.getHeader("Authorization");
+            String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");
+            if (token != null && !token.isBlank()) {
+                userId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
+            }
+        }
+        if (userId == null && request.getParameter("user_id") != null) {
+            try {
+                userId = Long.parseLong(request.getParameter("user_id").trim());
+            } catch (Exception ignored) {}
+        }
+
+        if (userId == null) {
             response.put("success", false);
             return ResponseEntity.status(401).body(response);
         }
 
-        Long userId;
-        try {
-            userId = Long.parseLong(userIdCookie.trim());
-        } catch (Exception e) {
-            response.put("success", false);
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        if (requestData == null || !requestData.containsKey("board_id")) {
-            response.put("success", false);
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        Object idObj = requestData.get("board_id");
-        Long boardId = null;
-
-        if (idObj instanceof Number) {
-            boardId = ((Number) idObj).longValue();
-        } else if (idObj instanceof String) {
-            try {
-                boardId = Long.parseLong((String) idObj);
-            } catch (NumberFormatException e) {
-                response.put("success", false);
-                return ResponseEntity.badRequest().body(response);
+        Long boardId = pathBoardId != null ? pathBoardId : queryBoardId;
+        if (boardId == null && requestData != null && requestData.containsKey("board_id")) {
+            Object idObj = requestData.get("board_id");
+            if (idObj instanceof Number) {
+                boardId = ((Number) idObj).longValue();
+            } else if (idObj instanceof String) {
+                try {
+                    boardId = Long.parseLong((String) idObj);
+                } catch (NumberFormatException ignored) {}
             }
         }
 

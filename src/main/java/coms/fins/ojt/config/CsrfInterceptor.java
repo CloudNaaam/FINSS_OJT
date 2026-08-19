@@ -43,7 +43,8 @@ public class CsrfInterceptor implements HandlerInterceptor {
                 || requestURI.startsWith("/api/profile/")
                 || requestURI.startsWith("/api/admin/")
                 || requestURI.startsWith("/api/user/")
-                || requestURI.equals("/api/users")) {
+                || requestURI.equals("/api/users")
+                || ("DELETE".equalsIgnoreCase(method) && (requestURI.startsWith("/api/board") || requestURI.startsWith("/board")))) {
             return true;
         }
 

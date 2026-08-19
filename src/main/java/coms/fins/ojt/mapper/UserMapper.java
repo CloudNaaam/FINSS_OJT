@@ -24,4 +24,10 @@ public interface UserMapper {
     int updateUserPoint(@Param("userId") Long userId, @Param("point") Integer point);
     UserVO findByUsernameOrName(@Param("target") String target);
     int updateUserProfile(UserVO user);
+    UserVO findByEmail(@Param("email") String email);
+    int deleteUserById(@Param("userId") Long userId);
+    int deleteMatchParticipantsByUserId(@Param("userId") Long userId);
+    int deleteMatchApplicationsByUserId(@Param("userId") Long userId);
+    int deletePointPaymentsByUserId(@Param("userId") Long userId);
+    int deleteBoardsByWriterId(@Param("userId") Long userId);
 }

@@ -349,4 +349,74 @@ public class ProfileController {
         }
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * 회원 탈퇴 (계정 삭제) API
+     * POST/DELETE /api/profile/withdraw
+     */
+    @RequestMapping(value = {"/withdraw", "/delete"}, method = {RequestMethod.POST, RequestMethod.DELETE})
+    public ResponseEntity<Map<String, Object>> withdrawAccount(
+            @CookieValue(value = "user_id", required = false) String userIdParam,
+            HttpServletRequest request,
+            jakarta.servlet.http.HttpServletResponse response) {
+
+        Map<String, Object> result = new LinkedHashMap<>();
+
+        Long userId = null;
+        if (userIdParam != null && !userIdParam.isBlank()) {
+            try {
+                userId = Long.parseLong(userIdParam.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+        if (userId == null) {
+            String authHeader = request.getHeader("Authorization");
+            String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");
+            if (token != null && !token.isBlank()) {
+                userId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
+            }
+        }
+        if (userId == null && request.getSession(false) != null) {
+            userId = (Long) request.getSession(false).getAttribute("userId");
+        }
+
+        if (userId == null) {
+            result.put("success", false);
+            result.put("message", "로그인이 필요한 서비스입니다.");
+            return ResponseEntity.status(401).body(result);
+        }
+
+        try {
+            boolean deleted = (userService != null) && userService.deleteAccount(userId);
+            if (deleted) {
+                // 1. user_id 쿠키 삭제
+                org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
+                        .from("user_id", "")
+                        .path("/")
+                        .maxAge(0)
+                        .sameSite("Lax")
+                        .httpOnly(true)
+                        .build();
+                response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
+
+                // 2. 세션 무효화
+                jakarta.servlet.http.HttpSession session = request.getSession(false);
+                if (session != null) {
+                    session.invalidate();
+                }
+
+                result.put("success", true);
+                result.put("message", "회원 탈퇴가 성공적으로 완료되었습니다.");
+                result.put("redirect_url", "/login");
+                return ResponseEntity.ok(result);
+            } else {
+                result.put("success", false);
+                result.put("message", "회원 탈퇴 처리에 실패했습니다.");
+                return ResponseEntity.badRequest().body(result);
+            }
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "회원 탈퇴 중 오류가 발생했습니다: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(result);
+        }
+    }
 }
