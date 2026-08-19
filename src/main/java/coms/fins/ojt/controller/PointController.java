@@ -1,7 +1,10 @@
 package coms.fins.ojt.controller;
 
+import coms.fins.ojt.domain.PointPaymentVO;
 import coms.fins.ojt.domain.UserVO;
+import coms.fins.ojt.mapper.PointPaymentMapper;
 import coms.fins.ojt.mapper.UserMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/point")
@@ -20,6 +23,9 @@ public class PointController {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private PointPaymentMapper pointPaymentMapper;
 
     /**
      * 포인트 선물/선송 API (POST /api/point/send)
@@ -130,4 +136,144 @@ public class PointController {
         response.put("message", "포인트를 성공적으로 전달했습니다!");
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * API ① 포인트 충전 주문 생성
+     * POST /api/point/charge/request
+     * Request: { "amount": 10000 }
+     */
+    @PostMapping("/charge/request")
+    public ResponseEntity<Map<String, Object>> requestCharge(
+            @RequestBody(required = false) Map<String, Object> requestBody,
+            @CookieValue(value = "user_id", required = false) String userIdCookie,
+            HttpServletRequest request) {
+
+        Map<String, Object> response = new LinkedHashMap<>();
+
+        // 1. 인증된 사용자 ID 판별 (쿠키 우선, JWT fallback)
+        Long userId = null;
+        if (userIdCookie != null && !userIdCookie.isBlank()) {
+            try {
+                userId = Long.parseLong(userIdCookie.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+
+        if (userId == null) {
+            String authHeader = request.getHeader("Authorization");
+            String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");
+            if (token != null && !token.isBlank()) {
+                userId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
+            }
+        }
+
+        if (userId == null) {
+            response.put("success", false);
+            response.put("message", "로그인이 필요한 서비스입니다.");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        // 2. 충전 금액 추출 (기본 10000원)
+        int amount = 10000;
+        if (requestBody != null && requestBody.get("amount") != null) {
+            try {
+                amount = Integer.parseInt(String.valueOf(requestBody.get("amount")).trim());
+            } catch (NumberFormatException e) {
+                response.put("success", false);
+                response.put("message", "금액은 숫자여야 합니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+        }
+
+        if (amount <= 0) {
+            response.put("success", false);
+            response.put("message", "충전 금액은 1원 이상이어야 합니다.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // 3. PAY-YYYYMMDD-UUID 주문번호 생성
+        String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
+        String randomSuffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String paymentId = "PAY-" + dateStr + "-" + randomSuffix;
+
+        // 4. point_payment 테이블에 status = 'READY' 로 저장
+        PointPaymentVO paymentVO = new PointPaymentVO(paymentId, userId, amount, "READY", null, 0, new Date(), null);
+        pointPaymentMapper.insertPayment(paymentVO);
+
+        logger.info("포인트 충전 주문 생성: paymentId={}, userId={}, amount={}", paymentId, userId, amount);
+
+        // 5. 응답 반환
+        response.put("success", true);
+        response.put("payment_id", paymentId);
+        response.put("amount", amount);
+        response.put("payment_url", "/mock-pg/pay?payment_id=" + paymentId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * API ④ FINSS 포인트 지급 완료 처리 (취약 버전 구현)
+     * POST /api/point/charge/complete
+     * Request: { "payment_id": "PAY-...", "pg_transaction_id": "..." }
+     */
+    @PostMapping("/charge/complete")
+    public ResponseEntity<Map<String, Object>> completeCharge(
+            @RequestBody(required = false) Map<String, String> request) {
+
+        Map<String, Object> response = new LinkedHashMap<>();
+
+        if (request == null) {
+            response.put("success", false);
+            response.put("message", "요청 데이터가 올바르지 않습니다.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String paymentId = request.get("payment_id");
+        String pgTransactionId = request.get("pg_transaction_id");
+
+        if (paymentId == null || paymentId.isBlank()) {
+            response.put("success", false);
+            response.put("message", "payment_id가 필요합니다.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        PointPaymentVO payment = pointPaymentMapper.selectByPaymentId(paymentId.trim());
+
+        if (payment == null) {
+            response.put("success", false);
+            response.put("message", "결제 주문 정보를 찾을 수 없습니다.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        /*
+         * [취약점: 비즈니스 프로세스 결제 검증 누락 (Missing Payment Verification)]
+         *
+         * 1. Mock PG 실제 결제 여부(mock_pg_payment 테이블 또는 외부 PG API) 확인 안 함
+         * 2. payment.getStatus() == PAID 확인 안 함 (READY 상태에서도 통과)
+         * 3. pointApplied 중복 지급 여부 확인 안 함
+         */
+
+        UserVO user = userMapper.selectUserById(payment.getUserId());
+        if (user == null) {
+            response.put("success", false);
+            response.put("message", "사용자 정보를 찾을 수 없습니다.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        int currentPoint = user.getPoint() == null ? 0 : user.getPoint();
+        int newPoint = currentPoint + payment.getAmount();
+
+        userMapper.updateUserPoint(user.getUserId(), newPoint);
+        pointPaymentMapper.updateCompleted(paymentId, pgTransactionId != null ? pgTransactionId : "PG-SKIPPED");
+
+        logger.info("포인트 충전 완료 반영: paymentId={}, userId={}, chargedPoint={}, totalPoint={}",
+                paymentId, user.getUserId(), payment.getAmount(), newPoint);
+
+        response.put("success", true);
+        response.put("payment_id", paymentId);
+        response.put("charged_point", payment.getAmount());
+        response.put("total_point", newPoint);
+
+        return ResponseEntity.ok(response);
+    }
 }
+

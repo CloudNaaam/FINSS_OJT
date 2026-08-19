@@ -458,9 +458,19 @@
                 <span class="info-label" style="font-weight: 700; color: var(--blue);">💰 보유 포인트</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="info-value" id="infoPoint" style="font-size: 16px; font-weight: 800; color: #1e293b;">1,000 P</span>
+                    <button type="button" class="btn-profile-act" style="background: #10b981; color: #fff; padding: 4px 10px;" onclick="openChargeModal()">⚡ 충전하기</button>
                     <button type="button" class="btn-profile-act" style="background: var(--blue); color: #fff; padding: 4px 10px;" onclick="openPointModal()">🎁 선물하기</button>
                 </div>
             </div>
+        </div>
+
+        <!-- ⚽ 내가 신청한 매치 목록 -->
+        <h2 class="section-title" style="display: flex; align-items: center; justify-content: space-between;">
+            <span>⚽ 내가 신청한 매치</span>
+            <span id="myMatchCountBadge" style="font-size: 12px; background: #eaf3ff; color: var(--blue); padding: 2px 8px; border-radius: 10px; font-weight: 700;">0건</span>
+        </h2>
+        <div id="myMatchListContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
+            <p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 20px 0;">신청한 매치 내역을 불러오는 중...</p>
         </div>
 
         <!-- 계정 설정 메뉴 -->
@@ -533,6 +543,33 @@
             <div style="display: flex; gap: 8px; justify-content: flex-end;">
                 <button type="button" class="btn-profile-act" style="background:#e2e8f0; color:#334155; padding:8px 16px;" onclick="closePointModal()">취소</button>
                 <button type="submit" id="pointSubmitBtn" class="btn-profile-act" style="background:var(--blue); color:#fff; padding:8px 16px;">선물하기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ⚡ 포인트 충전하기 모달 -->
+<div id="pointChargeModal" class="user-modal-backdrop" onclick="closeChargeModalOnBackdrop(event)" style="display: none;">
+    <div class="user-modal-content" onclick="event.stopPropagation()" style="width: min(90%, 400px); padding: 24px; border-radius: 20px; background: #fff; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0; font-size:18px; font-weight:800; color:#1e293b;">⚡ 포인트 충전</h3>
+        <p style="font-size:13px; color:#64748b; margin-bottom:16px;">충전할 금액을 선택하거나 직접 입력하세요.</p>
+        <form id="pointChargeForm" onsubmit="handleRequestCharge(event)">
+            <div style="margin-bottom: 12px; text-align: left;">
+                <label style="font-size:12px; font-weight:700; color:#475569;">충전 금액 선택</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+                    <button type="button" class="btn-profile-act" style="background:#f1f5f9; color:#1e293b; padding:10px; font-weight:700;" onclick="setChargeAmount(5000)">5,000원</button>
+                    <button type="button" class="btn-profile-act" style="background:#f1f5f9; color:#1e293b; padding:10px; font-weight:700;" onclick="setChargeAmount(10000)">10,000원</button>
+                    <button type="button" class="btn-profile-act" style="background:#f1f5f9; color:#1e293b; padding:10px; font-weight:700;" onclick="setChargeAmount(30000)">30,000원</button>
+                    <button type="button" class="btn-profile-act" style="background:#f1f5f9; color:#1e293b; padding:10px; font-weight:700;" onclick="setChargeAmount(50000)">50,000원</button>
+                </div>
+            </div>
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="font-size:12px; font-weight:700; color:#475569;">충전할 금액 (원)</label>
+                <input type="number" id="chargeAmountInput" name="amount" class="user-search-input" style="width:100%; box-sizing:border-box; margin-top:4px;" value="10000" min="1000" step="1000" required>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button type="button" class="btn-profile-act" style="background:#e2e8f0; color:#334155; padding:8px 16px;" onclick="closeChargeModal()">취소</button>
+                <button type="submit" id="chargeSubmitBtn" class="btn-profile-act" style="background:#10b981; color:#fff; padding:8px 16px;">결제 진행하기</button>
             </div>
         </form>
     </div>
@@ -665,8 +702,54 @@
         }
     }
 
+    function fetchMyAppliedMatches() {
+        fetch('/api/matches/my')
+            .then(function(res) {
+                if (!res.ok) return [];
+                return res.json();
+            })
+            .then(function(matches) {
+                var container = document.getElementById('myMatchListContainer');
+                var countBadge = document.getElementById('myMatchCountBadge');
+                if (!container) return;
+
+                if (!matches || matches.length === 0) {
+                    if (countBadge) countBadge.innerText = '0건';
+                    container.innerHTML = '<div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 24px 16px; text-align: center; color: #94a3b8; font-size: 13px;">아직 신청한 매치가 없습니다.<br/><a href="/" style="color: var(--blue); font-weight: 700; text-decoration: none; margin-top: 8px; display: inline-block;">⚽ 매치 둘러보기 ›</a></div>';
+                    return;
+                }
+
+                if (countBadge) countBadge.innerText = matches.length + '건';
+
+                var html = '';
+                matches.forEach(function(m) {
+                    var matchId = m.match_id || m.matchId;
+                    var fieldName = m.field_name || m.fieldName || '구장';
+                    var matchAt = m.match_at || m.matchAt || '';
+                    var matchTimeStr = matchAt ? matchAt.replace('T', ' ') : '일시 미정';
+                    var region = m.region || '지역 미정';
+
+                    html += '<div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.15s ease;" onclick="location.href=\'/matches/' + matchId + '\'">' +
+                                '<div>' +
+                                    '<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">' +
+                                        '<span style="background: #ecfdf5; color: #059669; font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 6px;">참가 확정</span>' +
+                                        '<strong style="font-size: 15px; color: #1e293b;">' + fieldName + '</strong>' +
+                                    '</div>' +
+                                    '<div style="font-size: 12px; color: #64748b;">📅 ' + matchTimeStr + ' · 📍 ' + region + '</div>' +
+                                '</div>' +
+                                '<span style="font-size: 18px; color: #94a3b8;">›</span>' +
+                            '</div>';
+                });
+                container.innerHTML = html;
+            })
+            .catch(function(err) {
+                console.error('내 신청 매치 목록 로드 실패:', err);
+            });
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         fetchMyProfile();
+        fetchMyAppliedMatches();
         window.sessionCsrfToken = '${sessionScope.CSRF_TOKEN}';
     });
 
@@ -751,6 +834,71 @@
         .catch(function(err) {
             submitBtn.disabled = false;
             submitBtn.innerText = '선물하기';
+            alert('요청 처리 중 오류가 발생했습니다.');
+        });
+    }
+
+    function openChargeModal() {
+        var modal = document.getElementById('pointChargeModal');
+        if (modal) modal.style.display = 'flex';
+        var input = document.getElementById('chargeAmountInput');
+        if (input) setTimeout(function(){ input.focus(); }, 100);
+    }
+
+    function closeChargeModal() {
+        var modal = document.getElementById('pointChargeModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function closeChargeModalOnBackdrop(e) {
+        if (e.target && e.target.id === 'pointChargeModal') {
+            closeChargeModal();
+        }
+    }
+
+    function setChargeAmount(val) {
+        var input = document.getElementById('chargeAmountInput');
+        if (input) input.value = val;
+    }
+
+    function handleRequestCharge(e) {
+        e.preventDefault();
+
+        var amountVal = parseInt(document.getElementById('chargeAmountInput').value.trim(), 10);
+        if (isNaN(amountVal) || amountVal <= 0) {
+            alert('유효한 충전 금액을 입력해주세요.');
+            return;
+        }
+
+        var submitBtn = document.getElementById('chargeSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = '주문 생성 중...';
+
+        fetch('/api/point/charge/request', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                amount: amountVal
+            })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = '결제 진행하기';
+
+            if (data && data.success && data.payment_url) {
+                closeChargeModal();
+                // Mock PG 결제 화면으로 이동
+                window.location.href = data.payment_url;
+            } else {
+                alert('충전 주문 생성 실패: ' + (data.message || '오류가 발생했습니다.'));
+            }
+        })
+        .catch(function(err) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = '결제 진행하기';
             alert('요청 처리 중 오류가 발생했습니다.');
         });
     }

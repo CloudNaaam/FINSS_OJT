@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="coms.fins.ojt.mapper.PointPaymentMapper">
+
+    <insert id="insertPayment" parameterType="coms.fins.ojt.domain.PointPaymentVO">
+        INSERT INTO point_payment (payment_id, user_id, amount, status, point_applied, created_at)
+        VALUES (#{paymentId}, #{userId}, #{amount}, #{status}, 0, CURRENT_TIMESTAMP)
+    </insert>
+
+    <select id="selectByPaymentId" resultType="coms.fins.ojt.domain.PointPaymentVO">
+        SELECT payment_id AS paymentId,
+               user_id AS userId,
+               amount,
+               status,
+               pg_transaction_id AS pgTransactionId,
+               point_applied AS pointApplied,
+               created_at AS createdAt,
+               completed_at AS completedAt
+        FROM point_payment
+        WHERE payment_id = #{paymentId}
+    </select>
+
+    <update id="updateCompleted">
+        UPDATE point_payment
+        SET status = 'COMPLETED',
+            point_applied = 1,
+            pg_transaction_id = #{pgTransactionId},
+            completed_at = CURRENT_TIMESTAMP
+        WHERE payment_id = #{paymentId}
+    </update>
+
+</mapper>

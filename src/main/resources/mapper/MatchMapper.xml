@@ -17,4 +17,60 @@
         SELECT m.match_id AS matchId, m.field_name AS fieldName, m.highlight_video AS highlightVideo, m.match_at AS matchAt, m.created_at AS createdAt, m.match_level AS matchLevel, m.gender, m.num_members AS numMembers, g.address, g.address_detail AS addressDetail, g.region, g.size_info AS sizeInfo, g.is_indoor AS isIndoor, g.grass_type AS grassType, g.parking_type AS parkingType, g.has_shower AS hasShower, g.has_lights AS hasLights, g.has_shoes_rental AS hasShoesRental, g.has_ball_rental AS hasBallRental, g.price_per_hour AS pricePerHour, g.notice FROM matches m LEFT JOIN ground g ON m.field_name = g.name WHERE m.match_id = ${matchId}
     </select>
 
+    <insert id="insertApplication" parameterType="coms.fins.ojt.domain.MatchApplicationVO">
+        INSERT INTO match_application (application_id, match_id, user_id, fee, status, created_at)
+        VALUES (#{applicationId}, #{matchId}, #{userId}, #{fee}, #{status}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <select id="selectApplication" resultType="coms.fins.ojt.domain.MatchApplicationVO">
+        SELECT application_id AS applicationId,
+               match_id AS matchId,
+               user_id AS userId,
+               fee,
+               status,
+               created_at AS createdAt
+        FROM match_application
+        WHERE application_id = #{applicationId}
+    </select>
+
+    <update id="updateApplicationStatus">
+        UPDATE match_application
+        SET status = #{status}
+        WHERE application_id = #{applicationId}
+    </update>
+
+    <insert id="insertParticipant">
+        INSERT INTO match_participants (match_id, user_id, created_at)
+        VALUES (#{matchId}, #{userId}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <select id="countParticipant" resultType="int">
+        SELECT COUNT(*)
+        FROM match_participants
+        WHERE match_id = #{matchId} AND user_id = #{userId}
+    </select>
+
+    <select id="selectMyAppliedMatches" resultType="coms.fins.ojt.domain.MatchVO">
+        SELECT m.match_id AS matchId,
+               m.field_name AS fieldName,
+               m.highlight_video AS highlightVideo,
+               m.match_at AS matchAt,
+               m.created_at AS createdAt,
+               m.match_level AS matchLevel,
+               m.gender,
+               m.num_members AS numMembers,
+               g.address,
+               g.address_detail AS addressDetail,
+               g.region,
+               g.size_info AS sizeInfo,
+               g.is_indoor AS isIndoor,
+               g.grass_type AS grassType,
+               g.price_per_hour AS pricePerHour
+        FROM match_participants p
+        JOIN matches m ON p.match_id = TO_CHAR(m.match_id)
+        LEFT JOIN ground g ON m.field_name = g.name
+        WHERE p.user_id = #{userId}
+        ORDER BY m.match_at DESC
+    </select>
+
 </mapper>

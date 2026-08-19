@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="coms.fins.ojt.mapper.MockPgPaymentMapper">
+
+    <insert id="insertMockPgPayment" parameterType="coms.fins.ojt.domain.MockPgPaymentVO">
+        INSERT INTO mock_pg_payment (pg_transaction_id, payment_id, amount, status, approved_at)
+        VALUES (#{pgTransactionId}, #{paymentId}, #{amount}, #{status}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <select id="selectByPgTransactionId" resultType="coms.fins.ojt.domain.MockPgPaymentVO">
+        SELECT pg_transaction_id AS pgTransactionId,
+               payment_id AS paymentId,
+               amount,
+               status,
+               approved_at AS approvedAt
+        FROM mock_pg_payment
+        WHERE pg_transaction_id = #{pgTransactionId}
+    </select>
+
+    <select id="selectByPaymentId" resultType="coms.fins.ojt.domain.MockPgPaymentVO">
+        SELECT pg_transaction_id AS pgTransactionId,
+               payment_id AS paymentId,
+               amount,
+               status,
+               approved_at AS approvedAt
+        FROM mock_pg_payment
+        WHERE payment_id = #{paymentId}
+        FETCH FIRST 1 ROWS ONLY
+    </select>
+
+</mapper>

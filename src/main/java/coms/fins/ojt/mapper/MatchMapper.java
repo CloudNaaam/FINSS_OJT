@@ -1,5 +1,6 @@
 package coms.fins.ojt.mapper;
 
+import coms.fins.ojt.domain.MatchApplicationVO;
 import coms.fins.ojt.domain.MatchVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -17,4 +18,11 @@ public interface MatchMapper {
             @Param("evening") String evening
     );
     MatchVO selectMatchById(@Param("matchId") Object matchId);
+
+    int insertApplication(MatchApplicationVO vo);
+    MatchApplicationVO selectApplication(@Param("applicationId") String applicationId);
+    int updateApplicationStatus(@Param("applicationId") String applicationId, @Param("status") String status);
+    int insertParticipant(@Param("matchId") String matchId, @Param("userId") Long userId);
+    int countParticipant(@Param("matchId") String matchId, @Param("userId") Long userId);
+    List<MatchVO> selectMyAppliedMatches(@Param("userId") Long userId);
 }

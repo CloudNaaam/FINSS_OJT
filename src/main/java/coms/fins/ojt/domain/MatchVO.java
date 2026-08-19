@@ -75,6 +75,9 @@ public class MatchVO {
     @JsonProperty("notice")
     private String notice;
 
+    @JsonProperty("is_applied")
+    private Boolean isApplied;
+
     public Long getMatchId() {
         return matchId;
     }
@@ -174,6 +177,9 @@ public class MatchVO {
 
     public Integer getPricePerHour() { return pricePerHour; }
     public void setPricePerHour(Integer pricePerHour) { this.pricePerHour = pricePerHour; }
+
+    public Boolean getIsApplied() { return isApplied; }
+    public void setIsApplied(Boolean isApplied) { this.isApplied = isApplied; }
 
     public String getNotice() { return notice; }
     public void setNotice(String notice) { this.notice = notice; }

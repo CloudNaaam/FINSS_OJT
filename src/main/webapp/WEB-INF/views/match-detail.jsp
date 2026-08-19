@@ -351,6 +351,12 @@
 
         <!-- 매치 개요 -->
         <section class="summary">
+            <!-- ⚽ 신청 완료 상태 뱃지 -->
+            <div id="appliedNoticeBadge" style="display: none; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 14px 18px; border-radius: 14px; font-weight: 700; font-size: 14px; margin-bottom: 16px; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">✅</span>
+                <span>회원님이 이미 신청 완료(참가 확정)한 매치입니다.</span>
+            </div>
+
             <div class="status-row">
                 <span class="status">신청 가능 · 매치 진행 예정</span>
             </div>
@@ -440,9 +446,69 @@
     <div class="apply-bar">
         <div>
             <small style="color:var(--muted); font-size:11px;">참가비</small>
-            <div class="price">10,000원</div>
+            <div class="price">5,000 P</div>
         </div>
-        <button class="apply-btn" id="applyButton" type="button">매치 신청하기</button>
+        <button class="apply-btn" id="applyButton" type="button" onclick="openApplyModal()">매치 신청하기</button>
+    </div>
+</div>
+
+<!-- ⚽ 매치 신청 단계형 모달 -->
+<div id="matchApplyModal" style="display: none; position: fixed; z-index: 100; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="width: min(100%, 420px); background: #fff; border-radius: 24px; padding: 28px 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); position: relative;">
+
+        <!-- 닫기 버튼 -->
+        <button type="button" onclick="closeApplyModal()" style="position: absolute; top: 20px; right: 20px; border: 0; background: transparent; font-size: 20px; color: #94a3b8; cursor: pointer;">✕</button>
+
+        <!-- 1단계: 매치 신청 안내 -->
+        <div id="applyStep1">
+            <div style="font-size: 28px; margin-bottom: 8px;">⚽</div>
+            <h3 style="font-size: 20px; font-weight: 800; color: #1e293b; margin: 0 0 6px;">매치 신청</h3>
+            <p style="font-size: 13px; color: #64748b; margin: 0 0 20px;">매치 정보를 확인하고 신청을 시작하세요.</p>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; font-size: 14px; color: #64748b; margin-bottom: 8px;">
+                    <span>구장명</span>
+                    <strong style="color: #1e293b;" id="modalFieldName">핀랩 풋살 파크</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 14px; color: #64748b; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
+                    <span style="font-weight: 700; color: #1e293b;">참가비</span>
+                    <strong style="color: var(--blue); font-size: 18px; font-weight: 800;" id="modalFeeText">5,000 P</strong>
+                </div>
+            </div>
+
+            <button type="button" id="btnStep1" class="apply-btn" style="width: 100%; border-radius: 14px; height: 50px;" onclick="handleStep1Apply()">
+                신청하기
+            </button>
+        </div>
+
+        <!-- 2단계: 포인트 결제 -->
+        <div id="applyStep2" style="display: none;">
+            <div style="font-size: 28px; margin-bottom: 8px;">💰</div>
+            <h3 style="font-size: 20px; font-weight: 800; color: #1e293b; margin: 0 0 6px;">포인트 결제</h3>
+            <p style="font-size: 13px; color: #64748b; margin: 0 0 20px;" id="step2AppIdText">신청번호: APP-10001</p>
+
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 18px; margin-bottom: 20px; text-align: center;">
+                <span style="font-size: 15px; font-weight: 700; color: #166534;" id="step2PointMsg">
+                    참가비 5,000P를 사용합니다.
+                </span>
+            </div>
+
+            <button type="button" id="btnStep2" class="apply-btn" style="width: 100%; border-radius: 14px; height: 50px; background: #16a34a;" onclick="handleStep2Point()">
+                결제
+            </button>
+        </div>
+
+        <!-- 3단계: 신청 완료 -->
+        <div id="applyStep3" style="display: none; text-align: center;">
+            <div style="font-size: 36px; margin-bottom: 12px;">🎉</div>
+            <h3 style="font-size: 20px; font-weight: 800; color: #1e293b; margin: 0 0 6px;">신청 완료</h3>
+            <p style="font-size: 15px; font-weight: 600; color: #15803d; margin: 0 0 24px;">매치 신청이 완료되었습니다.</p>
+
+            <button type="button" class="apply-btn" style="width: 100%; border-radius: 14px; height: 50px;" onclick="handleFinishApply()">
+                확인
+            </button>
+        </div>
+
     </div>
 </div>
 
@@ -463,6 +529,9 @@
     const applyButton = document.getElementById("applyButton");
     const toast = document.getElementById("toast");
 
+    let currentApplicationId = null;
+    let currentMatchFee = 5000;
+
     function showToast(msg) {
         toast.textContent = msg;
         toast.classList.add("show");
@@ -481,20 +550,22 @@
             .then(function(data) {
                 if (!data) return;
 
-                fieldName.textContent = data.field_name || "경기장 정보 없음";
+                fieldName.textContent = data.field_name || "핀랩 풋살 파크";
+                document.getElementById("modalFieldName").textContent = data.field_name || "핀랩 풋살 파크";
                 fieldLocationBadge.textContent = data.field_name || "경기장 위치";
                 if (data.field_name) {
                     downloadFileName.value = data.field_name.trim().replaceAll(/\s+/g, "_") + "_하이라이트";
                 }
 
                 if (data.match_at) {
-                    matchTime.textContent = "📅 " + data.match_at;
+                    var matchTimeStr = String(data.match_at).replace("T", " ");
+                    matchTime.textContent = "📅 " + matchTimeStr;
                 } else {
-                    matchTime.textContent = "📅 일시 미정";
+                    matchTime.textContent = "📅 2026.08.20 (수) 19:00";
                 }
 
                 levelTag.textContent = "레벨 " + (data.match_level || 5);
-                genderTag.textContent = data.gender === "ANY" ? "남녀 모두" : (data.gender === "MALE" ? "남성" : "여성");
+                genderTag.textContent = data.gender === "ANY" ? "남녀 모두" : (data.gender === "MALE" ? "남성 매치" : "여성 매치");
                 membersTag.textContent = "모집 " + (data.num_members || 12) + "명";
 
                 if (data.highlight_video && data.highlight_video.trim() !== "") {
@@ -534,6 +605,15 @@
                 if (data.notice && data.notice.trim() !== "") {
                     document.getElementById("groundNotice").textContent = data.notice;
                     document.getElementById("groundNoticeBox").style.display = "block";
+                }
+
+                // 신청 완료 여부 확인 및 UI 전환
+                if (data.is_applied) {
+                    var badge = document.getElementById("appliedNoticeBadge");
+                    if (badge) badge.style.display = "flex";
+                    applyButton.textContent = "✅ 신청 완료 (참가 중)";
+                    applyButton.disabled = true;
+                    applyButton.style.background = "#10b981";
                 }
             })
             .catch(function(err) {
@@ -591,15 +671,115 @@
             });
     });
 
-    // 매치 신청 버튼 클릭
-    applyButton.addEventListener("click", function() {
-        if (confirm("이 매치에 신청하시겠습니까?")) {
-            applyButton.textContent = "신청 완료";
-            applyButton.disabled = true;
-            applyButton.style.background = "#bdc6d2";
-            showToast("매치 신청이 성공적으로 완료되었습니다!");
+    // --- 단계형 매치 신청 모달 컨트롤러 ---
+    function openApplyModal() {
+        document.getElementById("applyStep1").style.display = "block";
+        document.getElementById("applyStep2").style.display = "none";
+        document.getElementById("applyStep3").style.display = "none";
+        document.getElementById("matchApplyModal").style.display = "flex";
+    }
+
+    function closeApplyModal() {
+        document.getElementById("matchApplyModal").style.display = "none";
+    }
+
+    // 1단계: POST /api/matches/{matchId}/apply (신청 시작)
+    function handleStep1Apply() {
+        const btn = document.getElementById("btnStep1");
+        btn.disabled = true;
+        btn.innerText = "신청 주문 생성 중...";
+
+        fetch('/api/matches/' + matchId + '/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            btn.innerText = "신청하기";
+
+            if (data && data.success) {
+                currentApplicationId = data.application_id;
+                currentMatchFee = data.fee || 5000;
+
+                document.getElementById("step2AppIdText").innerText = "신청번호: " + currentApplicationId;
+                document.getElementById("step2PointMsg").innerText = "참가비 " + Number(currentMatchFee).toLocaleString() + "P를 사용합니다.";
+                document.getElementById("btnStep2").innerText = Number(currentMatchFee).toLocaleString() + "P 결제";
+
+                // 2단계(포인트 결제) 화면 전환
+                document.getElementById("applyStep1").style.display = "none";
+                document.getElementById("applyStep2").style.display = "block";
+            } else {
+                alert("매치 신청 실패: " + (data.message || "오류가 발생했습니다."));
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.innerText = "신청하기";
+            alert("신청 요청 중 네트워크 오류가 발생했습니다.");
+        });
+    }
+
+    // 2단계: POST /api/matches/apply/point (포인트 차감) -> POST /api/matches/apply/complete (완료 처리)
+    function handleStep2Point() {
+        if (!currentApplicationId) {
+            alert("신청 정보가 올바르지 않습니다.");
+            return;
         }
-    });
+
+        const btn = document.getElementById("btnStep2");
+        btn.disabled = true;
+        btn.innerText = "포인트 결제 처리 중...";
+
+        // 1) 포인트 차감 요청
+        fetch('/api/matches/apply/point', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ application_id: currentApplicationId })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(pointData) {
+            if (pointData && pointData.success) {
+                btn.innerText = "참가자 등록 완료 중...";
+
+                // 2) 신청 완료 처리
+                return fetch('/api/matches/apply/complete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ application_id: currentApplicationId })
+                });
+            } else {
+                throw new Error(pointData.message || "포인트 결제에 실패했습니다.");
+            }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(completeData) {
+            btn.disabled = false;
+            btn.innerText = "결제";
+
+            if (completeData && completeData.success) {
+                // 3단계(완료) 화면 전환
+                document.getElementById("applyStep2").style.display = "none";
+                document.getElementById("applyStep3").style.display = "block";
+            } else {
+                alert("신청 완료 처리 실패: " + (completeData.message || ""));
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.innerText = Number(currentMatchFee).toLocaleString() + "P 결제";
+            alert("결제 처리 오류: " + err.message);
+        });
+    }
+
+    // 3단계: 확인 클릭 시 모달 닫기 및 버튼 상태 갱신
+    function handleFinishApply() {
+        closeApplyModal();
+        applyButton.textContent = "신청 완료";
+        applyButton.disabled = true;
+        applyButton.style.background = "#bdc6d2";
+        showToast("매치 신청이 성공적으로 완료되었습니다!");
+    }
 
     document.addEventListener("DOMContentLoaded", fetchMatchDetail);
 </script>

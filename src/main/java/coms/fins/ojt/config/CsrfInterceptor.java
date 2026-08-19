@@ -35,6 +35,9 @@ public class CsrfInterceptor implements HandlerInterceptor {
                 || requestURI.equals("/api/auth/send_code")
                 || requestURI.equals("/api/auth/valid_code")
                 || requestURI.startsWith("/api/findpw/")
+                || requestURI.startsWith("/api/point/charge/")
+                || requestURI.startsWith("/mock-pg/")
+                || requestURI.startsWith("/api/matches/")
                 || requestURI.startsWith("/api/admin/")
                 || requestURI.startsWith("/api/user/")
                 || requestURI.equals("/api/users")) {

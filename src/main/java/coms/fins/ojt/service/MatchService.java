@@ -1,15 +1,21 @@
 package coms.fins.ojt.service;
 
+import coms.fins.ojt.domain.MatchApplicationVO;
 import coms.fins.ojt.domain.MatchVO;
+import coms.fins.ojt.domain.UserVO;
 import coms.fins.ojt.mapper.MatchMapper;
+import coms.fins.ojt.mapper.UserMapper;
 import jakarta.servlet.ServletContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
+import java.util.Date;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -19,6 +25,9 @@ public class MatchService {
 
     @Autowired(required = false)
     private MatchMapper matchMapper;
+
+    @Autowired(required = false)
+    private UserMapper userMapper;
 
     @Autowired(required = false)
     private ServletContext servletContext;
@@ -140,4 +149,95 @@ public class MatchService {
             throw new RuntimeException("영상 압축 처리 실패: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * API 1 — 매치 신청 시작
+     */
+    @Transactional
+    public MatchApplicationVO startApplication(String matchId, Long userId, Integer fee) {
+        if (matchMapper == null || matchId == null || userId == null) {
+            return null;
+        }
+
+        int actualFee = (fee != null && fee > 0) ? fee : 5000;
+        int randNum = 10000 + new Random().nextInt(90000);
+        String applicationId = "APP-" + randNum;
+
+        MatchApplicationVO app = new MatchApplicationVO(applicationId, matchId.trim(), userId, actualFee, "READY", new Date());
+        matchMapper.insertApplication(app);
+
+        logger.info("매치 신청 시작: applicationId={}, matchId={}, userId={}, fee={}", applicationId, matchId, userId, actualFee);
+        return app;
+    }
+
+    /**
+     * API 2 — 포인트 사용
+     */
+    @Transactional
+    public boolean usePoint(String applicationId) {
+        if (matchMapper == null || userMapper == null || applicationId == null) {
+            return false;
+        }
+
+        MatchApplicationVO app = matchMapper.selectApplication(applicationId.trim());
+        if (app == null) {
+            throw new IllegalArgumentException("해당 신청 정보를 찾을 수 없습니다.");
+        }
+
+        if (!"READY".equalsIgnoreCase(app.getStatus())) {
+            throw new IllegalStateException("이미 포인트 결제가 처리되었거나 유효하지 않은 상태입니다. (현재 상태: " + app.getStatus() + ")");
+        }
+
+        UserVO user = userMapper.selectUserById(app.getUserId());
+        if (user == null) {
+            throw new IllegalArgumentException("사용자 정보를 찾을 수 없습니다.");
+        }
+
+        int currentPoint = (user.getPoint() != null) ? user.getPoint() : 0;
+        if (currentPoint < app.getFee()) {
+            throw new IllegalStateException("보유 포인트가 부족합니다. (보유: " + currentPoint + "P, 필요: " + app.getFee() + "P)");
+        }
+
+        // 포인트 차감
+        userMapper.updateUserPoint(user.getUserId(), currentPoint - app.getFee());
+
+        // 상태 POINT_USED로 변경
+        matchMapper.updateApplicationStatus(applicationId.trim(), "POINT_USED");
+
+        logger.info("매치 신청 포인트 차감 완료: applicationId={}, userId={}, fee={}, remainingPoint={}",
+                applicationId, user.getUserId(), app.getFee(), currentPoint - app.getFee());
+        return true;
+    }
+
+    public MatchApplicationVO getApplication(String applicationId) {
+        if (matchMapper == null || applicationId == null) {
+            return null;
+        }
+        return matchMapper.selectApplication(applicationId.trim());
+    }
+
+    public boolean isUserApplied(String matchId, Long userId) {
+        if (matchMapper == null || matchId == null || userId == null) {
+            return false;
+        }
+        try {
+            return matchMapper.countParticipant(matchId.trim(), userId) > 0;
+        } catch (Exception e) {
+            logger.warn("참가 여부 확인 실패: matchId={}, userId={}", matchId, userId, e);
+            return false;
+        }
+    }
+
+    public List<MatchVO> getMyAppliedMatches(Long userId) {
+        if (matchMapper == null || userId == null) {
+            return List.of();
+        }
+        try {
+            return matchMapper.selectMyAppliedMatches(userId);
+        } catch (Exception e) {
+            logger.warn("내 신청 매치 목록 조회 실패: userId={}", userId, e);
+            return List.of();
+        }
+    }
 }
+
