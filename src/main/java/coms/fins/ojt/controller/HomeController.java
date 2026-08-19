@@ -169,4 +169,28 @@ public class HomeController {
     public String rules() {
         return "rules";
     }
+
+    @GetMapping({"/mypage/edit", "/profile/edit"})
+    public String profileEdit() {
+        return "profile-edit";
+    }
+
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request, HttpServletResponse response) {
+        // 1. user_id 쿠키 제거 (Max-Age=0)
+        org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
+                .from("user_id", "")
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .httpOnly(true)
+                .build();
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
+
+        /*
+         * [취약점: 로그아웃 시 서버 세션 미파기]
+         */
+
+        return "redirect:/login";
+    }
 }

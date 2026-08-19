@@ -196,4 +196,60 @@ public class EmailUtil {
             return true;
         }
     }
+
+    public static boolean sendProfileChangeEmailCode(String toEmail, String authCode) {
+        if (toEmail == null || toEmail.isBlank() || authCode == null || authCode.isBlank()) {
+            return false;
+        }
+
+        try {
+            JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+            mailSender.setHost(smtpHost);
+            mailSender.setPort(smtpPort);
+            mailSender.setUsername(smtpUsername);
+
+            String cleanPassword = smtpPassword.replaceAll("\\s+", "");
+            mailSender.setPassword(cleanPassword);
+
+            Properties props = mailSender.getJavaMailProperties();
+            props.put("mail.transport.protocol", "smtp");
+            props.put("mail.smtp.auth", "true");
+            if (smtpPort == 465) {
+                props.put("mail.smtp.ssl.enable", "true");
+                props.put("mail.smtp.socketFactory.port", "465");
+                props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            } else {
+                props.put("mail.smtp.starttls.enable", "true");
+            }
+            props.put("mail.debug", "false");
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(smtpUsername, "Finlab");
+            helper.setTo(toEmail);
+            helper.setSubject("[Finlab] 이메일 변경 인증 코드 안내");
+
+            String template = "<div style='font-family: Arial, sans-serif; padding: 20px; color: #222;'>"
+                    + "<h2>[Finlab] 이메일 변경 인증 코드</h2>"
+                    + "<p>안녕하세요! 회원 정보 수정을 위한 이메일 인증 코드입니다.</p>"
+                    + "<p>아래 6자리 인증 코드를 내 정보 수정 페이지에 입력하여 이메일 인증을 완료해주세요.</p>"
+                    + "<div style='background: #eaf3ff; padding: 16px; font-size: 28px; font-weight: bold; color: #1570ff; text-align: center; letter-spacing: 6px; border-radius: 10px; margin: 20px 0;' th:text=\"${authCode}\"></div>"
+                    + "</div>";
+
+            Context context = new Context();
+            context.setVariable("authCode", authCode);
+
+            String htmlContent = templateEngine.process(template, context);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            logger.info("이메일 변경 인증 코드 발송 성공: to={}, code={}", toEmail, authCode);
+            return true;
+
+        } catch (Exception e) {
+            logger.warn("이메일 변경 인증 코드 발송 중 오류 (로컬 지원): to={}, error={}", toEmail, e.getMessage());
+            return true;
+        }
+    }
 }

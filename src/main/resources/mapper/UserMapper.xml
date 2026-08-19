@@ -79,4 +79,17 @@
         FETCH FIRST 1 ROWS ONLY
     </select>
 
+    <update id="updateUserProfile" parameterType="coms.fins.ojt.domain.UserVO">
+        UPDATE users
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="phoneNumber != null">phone_number = #{phoneNumber},</if>
+            <if test="age != null">age = #{age},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="password != null and password != ''">password = #{password},</if>
+        </set>
+        WHERE user_id = #{userId}
+    </update>
+
 </mapper>

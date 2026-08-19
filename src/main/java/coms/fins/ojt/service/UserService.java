@@ -264,4 +264,85 @@ public class UserService {
             return java.util.Collections.emptyList();
         }
     }
+
+    /**
+     * 회원 정보 수정 - 이메일 변경 인증 코드 발송
+     * [취약점/요구사항: 인증 코드 유효 시간(만료 시간) 제한 없음 (No Expiration / Unlimited)]
+     */
+    @Transactional
+    public boolean sendProfileEmailCode(Long userId, String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+
+        try {
+            String authCode = String.format("%06d", new Random().nextInt(1000000));
+            // 만료 시간 없음 (9999-12-31 무제한 유효 일시로 설정하여 DB NOT NULL 제약조건 만족)
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.set(9999, java.util.Calendar.DECEMBER, 31, 23, 59, 59);
+            Date expiredAt = cal.getTime();
+
+            if (emailVerificationMapper != null) {
+                EmailVerificationVO vo = new EmailVerificationVO(userId, email.trim(), authCode, expiredAt);
+                emailVerificationMapper.insertVerification(vo);
+            }
+
+            EmailUtil.sendProfileChangeEmailCode(email.trim(), authCode);
+            logger.info("이메일 변경 인증 코드 발송 완료 (유효기간 무제한): userId={}, email={}, authCode={}", userId, email, authCode);
+            return true;
+
+        } catch (Exception e) {
+            logger.error("이메일 변경 인증 코드 발송 중 오류 발생:", e);
+            return false;
+        }
+    }
+
+    /**
+     * 회원 정보 수정 - 이메일 변경 인증 코드 검증
+     * [취약점/요구사항: 인증 코드 만료 시간 검증 생략 (무제한 인증 가능)]
+     */
+    @Transactional
+    public boolean verifyProfileEmailCode(String email, String code) {
+        if (email == null || email.isBlank() || code == null || code.isBlank()) {
+            return false;
+        }
+
+        if (emailVerificationMapper == null) {
+            return false;
+        }
+
+        try {
+            EmailVerificationVO vo = emailVerificationMapper.selectLatestVerification(email.trim(), code.trim());
+            if (vo == null) {
+                logger.warn("이메일 변경 코드 검증 실패 - 매칭 데이터 없음: email={}, code={}", email, code);
+                return false;
+            }
+
+            /*
+             * [취약점 포인트]
+             * 인증 코드 만료 시간(expiredAt) 검증 로직을 의도적으로 생략하여
+             * 한 번 발급된 인증 코드는 언제든지(제한 시간 없이) 재사용/인증 가능
+             */
+
+            emailVerificationMapper.updateVerifiedStatus(vo.getVerificationId());
+            logger.info("이메일 변경 코드 검증 성공 (제한 시간 미검증): email={}, verificationId={}", email, vo.getVerificationId());
+            return true;
+
+        } catch (Exception e) {
+            logger.error("이메일 변경 코드 검증 중 오류 발생:", e);
+            return false;
+        }
+    }
+
+    public boolean isEmailVerified(String email) {
+        if (email == null || email.isBlank() || emailVerificationMapper == null) {
+            return false;
+        }
+        try {
+            return emailVerificationMapper.checkEmailVerified(email.trim()) > 0;
+        } catch (Exception e) {
+            logger.error("이메일 인증 여부 확인 중 오류 발생:", e);
+            return false;
+        }
+    }
 }

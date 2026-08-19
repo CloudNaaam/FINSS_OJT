@@ -117,12 +117,12 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/logout")
+    @RequestMapping(value = "/logout", method = {RequestMethod.POST, RequestMethod.GET})
     public ResponseEntity<Map<String, Boolean>> logout(
             jakarta.servlet.http.HttpServletRequest httpRequest,
             jakarta.servlet.http.HttpServletResponse response) {
 
-        // 1. user_id 쿠키 제거 (SameSite=Lax, HttpOnly=true)
+        // 1. user_id 쿠키 제거 (Max-Age=0)
         org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
                 .from("user_id", "")
                 .path("/")
@@ -132,11 +132,10 @@ public class AuthController {
                 .build();
         response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 
-        // 2. 세션 및 세션 CSRF 토큰 완전 파기
-        jakarta.servlet.http.HttpSession session = httpRequest.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
+        /*
+         * [취약점: 로그아웃 시 서버 세션 미파기 (Session Not Invalidated)]
+         * 클라이언트 쿠키만 제거하고, 서버 측 HttpSession(JSESSIONID)은 파기하지 않고 그대로 유지
+         */
 
         Map<String, Boolean> result = new HashMap<>();
         result.put("success", true);

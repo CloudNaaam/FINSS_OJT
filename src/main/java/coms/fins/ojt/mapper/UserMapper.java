@@ -23,4 +23,5 @@ public interface UserMapper {
     int selectPenalizedUserCount();
     int updateUserPoint(@Param("userId") Long userId, @Param("point") Integer point);
     UserVO findByUsernameOrName(@Param("target") String target);
+    int updateUserProfile(UserVO user);
 }

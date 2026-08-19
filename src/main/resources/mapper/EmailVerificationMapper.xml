@@ -25,4 +25,10 @@
         UPDATE email_verifications SET verified = 1 WHERE verification_id = #{verificationId}
     </update>
 
+    <select id="checkEmailVerified" resultType="int">
+        SELECT COUNT(*)
+        FROM email_verifications
+        WHERE email = #{email} AND verified = 1
+    </select>
+
 </mapper>

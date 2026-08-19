@@ -152,7 +152,3 @@ CREATE TABLE match_participants (
     user_id        NUMBER NOT NULL,
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-
-
-

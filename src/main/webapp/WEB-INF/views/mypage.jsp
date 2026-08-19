@@ -476,8 +476,8 @@
         <!-- 계정 설정 메뉴 -->
         <h2 class="section-title">계정 및 서비스 설정</h2>
         <ul class="menu-list">
-            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>👤 내 정보 수정</span><span>›</span></a></li>
-            <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>🔒 비밀번호 변경</span><span>›</span></a></li>
+            <li class="menu-item"><a href="/mypage/edit"><span>👤 내 정보 수정</span><span>›</span></a></li>
+            <li class="menu-item"><a href="/mypage/edit"><span>🔒 비밀번호 변경</span><span>›</span></a></li>
             <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>🔔 알림 설정</span><span>›</span></a></li>
         </ul>
 

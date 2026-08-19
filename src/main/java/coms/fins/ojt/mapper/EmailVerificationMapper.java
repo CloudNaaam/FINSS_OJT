@@ -9,4 +9,5 @@ public interface EmailVerificationMapper {
     int insertVerification(EmailVerificationVO vo);
     EmailVerificationVO selectLatestVerification(@Param("email") String email, @Param("authCode") String authCode);
     int updateVerifiedStatus(@Param("verificationId") Long verificationId);
+    int checkEmailVerified(@Param("email") String email);
 }
