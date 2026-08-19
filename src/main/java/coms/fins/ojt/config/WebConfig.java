@@ -61,7 +61,28 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**");
 
         registry.addInterceptor(new AuthCookieInterceptor())
-                .addPathPatterns("/mypage", "/mypage/**", "/board/write", "/board/write/**", "/stadium-add", "/stadium-add/**", "/stadium-mod", "/stadium-mod/**");
+                .addPathPatterns("/**")
+                .excludePathPatterns(
+                        "/",                    // 메인 페이지 (유일한 비로그인 허용 화면)
+                        "/login",               // 로그인 페이지
+                        "/register",            // 회원가입 페이지
+                        "/findpw",              // 비밀번호 찾기 페이지
+                        "/findpw/**",
+                        "/api/auth/**",         // 로그인/회원가입/인증코드 API
+                        "/api/findpw/**",       // 비밀번호 찾기 API
+                        "/api/matches",         // 메인 페이지 매치 목록 조회
+                        "/api/search/ground",   // 메인 페이지 구장 검색
+                        "/api/scrap/**",        // 오픈그래프 스크랩
+                        "/.well-known/**",      // JWKS
+                        "/resources/**",
+                        "/static/**",
+                        "/uploads/**",
+                        "/css/**",
+                        "/js/**",
+                        "/images/**",
+                        "/favicon.ico",
+                        "/error"
+                );
 
         registry.addInterceptor(new CsrfInterceptor())
                 .addPathPatterns("/api/**");

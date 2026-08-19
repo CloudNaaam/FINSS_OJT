@@ -52,6 +52,22 @@ public class JwtInterceptor implements HandlerInterceptor {
             }
         }
 
+        // 세션에서 fallback 추출
+        if (userId == null && request.getSession(false) != null) {
+            Object sUserId = request.getSession(false).getAttribute("userId");
+            if (sUserId instanceof Number) {
+                userId = ((Number) sUserId).longValue();
+            } else if (sUserId instanceof String) {
+                try { userId = Long.parseLong((String) sUserId); } catch (Exception ignored) {}
+            }
+            if (userId == null) {
+                Object sUser = request.getSession(false).getAttribute("user");
+                if (sUser instanceof coms.fins.ojt.domain.UserVO) {
+                    userId = ((coms.fins.ojt.domain.UserVO) sUser).getUserId();
+                }
+            }
+        }
+
         if (userId != null) {
             request.setAttribute("userId", userId);
         }

@@ -96,8 +96,18 @@ public class AuthController {
                     .build();
             response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
 
-            // 2. HTTP 세션 생성 및 세션 전용 CSRF 토큰 발급
+            // 2. HTTP 세션 (JSESSIONID) 생성 및 사용자 정보, 권한(role), CSRF 토큰 세션 저장
             jakarta.servlet.http.HttpSession session = httpRequest.getSession(true);
+            session.setAttribute("userId", user.getUserId());
+            session.setAttribute("username", user.getUsername());
+            session.setAttribute("name", user.getName());
+            session.setAttribute("isAdmin", user.getIsAdmin() != null && user.getIsAdmin() == 1);
+            session.setAttribute("isManager", user.getIsManager() != null && user.getIsManager() == 1);
+            String role = (user.getIsAdmin() != null && user.getIsAdmin() == 1) ? "ROLE_ADMIN" 
+                        : ((user.getIsManager() != null && user.getIsManager() == 1) ? "ROLE_MANAGER" : "ROLE_USER");
+            session.setAttribute("role", role);
+            session.setAttribute("user", user);
+
             String csrfToken = coms.fins.ojt.util.CsrfTokenManager.generateToken();
             session.setAttribute(coms.fins.ojt.util.CsrfTokenManager.SESSION_CSRF_KEY, csrfToken);
 
@@ -106,6 +116,7 @@ public class AuthController {
 
             result.put("success", true);
             result.put("user_id", user.getUserId());
+            result.put("role", role);
             result.put("access_token", jwtToken);
             result.put("token_type", "Bearer");
             result.put("csrfToken", csrfToken); // 세션 CSRF 토큰 반환

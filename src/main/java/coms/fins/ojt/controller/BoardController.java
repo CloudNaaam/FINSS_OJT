@@ -71,17 +71,27 @@ public class BoardController {
     @ResponseBody
     public ResponseEntity<Map<String, Boolean>> writeBoard(
             @RequestBody BoardVO board,
-            @CookieValue(value = "user_id", required = false) String userIdCookie) {
+            @CookieValue(value = "user_id", required = false) String userIdCookie,
+            HttpServletRequest request) {
 
         Map<String, Boolean> response = new HashMap<>();
 
-        if (userIdCookie == null || userIdCookie.trim().isEmpty()) {
+        Long userId = null;
+        if (userIdCookie != null && !userIdCookie.trim().isEmpty()) {
+            try {
+                userId = Long.parseLong(userIdCookie.trim());
+            } catch (Exception ignored) {}
+        }
+        if (userId == null && request.getSession(false) != null) {
+            userId = (Long) request.getSession(false).getAttribute("userId");
+        }
+
+        if (userId == null) {
             response.put("success", false);
             return ResponseEntity.status(401).body(response);
         }
 
         try {
-            Long userId = Long.parseLong(userIdCookie.trim());
             board.setWriterId(userId);
             boolean success = boardService.createBoard(board);
             response.put("success", success);
@@ -122,6 +132,9 @@ public class BoardController {
             try {
                 userId = Long.parseLong(userIdCookie.trim());
             } catch (Exception ignored) {}
+        }
+        if (userId == null && request.getSession(false) != null) {
+            userId = (Long) request.getSession(false).getAttribute("userId");
         }
         if (userId == null) {
             String authHeader = request.getHeader("Authorization");

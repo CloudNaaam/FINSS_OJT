@@ -27,14 +27,42 @@ public class ProfileController {
 
     @GetMapping("/me")
     public ResponseEntity<UserVO> getMyProfile(
-            @CookieValue(value = "user_id", required = false) String userIdParam) {
+            @CookieValue(value = "user_id", required = false) String userIdParam,
+            HttpServletRequest request) {
 
-        if (userIdParam == null || userIdParam.trim().isEmpty()) {
+        Long userId = null;
+        if (userIdParam != null && !userIdParam.trim().isEmpty()) {
+            try {
+                userId = Long.parseLong(userIdParam.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+        if (userId == null && request.getSession(false) != null) {
+            Object sUserId = request.getSession(false).getAttribute("userId");
+            if (sUserId instanceof Number) {
+                userId = ((Number) sUserId).longValue();
+            } else if (sUserId instanceof String) {
+                try { userId = Long.parseLong((String) sUserId); } catch (Exception ignored) {}
+            }
+            if (userId == null) {
+                Object sUser = request.getSession(false).getAttribute("user");
+                if (sUser instanceof UserVO) {
+                    userId = ((UserVO) sUser).getUserId();
+                }
+            }
+        }
+        if (userId == null) {
+            String authHeader = request.getHeader("Authorization");
+            String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");
+            if (token != null && !token.isBlank()) {
+                userId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
+            }
+        }
+
+        if (userId == null) {
             return ResponseEntity.status(401).build();
         }
 
         try {
-            Long userId = Long.parseLong(userIdParam.trim());
             UserVO user = userMapper.selectUserById(userId);
             if (user == null) {
                 return ResponseEntity.notFound().build();
@@ -43,7 +71,7 @@ public class ProfileController {
             // 보안을 위해 비밀번호 제거
             user.setPassword(null);
             return ResponseEntity.ok(user);
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
     }
@@ -56,19 +84,20 @@ public class ProfileController {
 
         Map<String, Object> response = new LinkedHashMap<>();
 
-        if (userIdParam == null || userIdParam.trim().isEmpty()) {
+        Long userId = null;
+        if (userIdParam != null && !userIdParam.trim().isEmpty()) {
+            try {
+                userId = Long.parseLong(userIdParam.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+        if (userId == null && request.getSession(false) != null) {
+            userId = (Long) request.getSession(false).getAttribute("userId");
+        }
+
+        if (userId == null) {
             response.put("profile_img", null);
             response.put("success", false);
             return ResponseEntity.status(401).body(response);
-        }
-
-        Long userId;
-        try {
-            userId = Long.parseLong(userIdParam.trim());
-        } catch (NumberFormatException e) {
-            response.put("profile_img", null);
-            response.put("success", false);
-            return ResponseEntity.badRequest().body(response);
         }
 
         if (file == null || file.isEmpty()) {
@@ -148,29 +177,40 @@ public class ProfileController {
 
         Map<String, Boolean> response = new HashMap<>();
 
-        if (userIdParam == null || userIdParam.trim().isEmpty()) {
+        Long userId = null;
+        if (userIdParam != null && !userIdParam.trim().isEmpty()) {
+            try {
+                userId = Long.parseLong(userIdParam.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+        if (userId == null && request.getSession(false) != null) {
+            Object sUserId = request.getSession(false).getAttribute("userId");
+            if (sUserId instanceof Number) {
+                userId = ((Number) sUserId).longValue();
+            } else if (sUserId instanceof String) {
+                try { userId = Long.parseLong((String) sUserId); } catch (Exception ignored) {}
+            }
+            if (userId == null) {
+                Object sUser = request.getSession(false).getAttribute("user");
+                if (sUser instanceof UserVO) {
+                    userId = ((UserVO) sUser).getUserId();
+                }
+            }
+        }
+
+        if (userId == null) {
             response.put("success", false);
             return ResponseEntity.status(401).body(response);
         }
 
-        Long userId;
         try {
-            userId = Long.parseLong(userIdParam.trim());
-        } catch (NumberFormatException e) {
-            response.put("success", false);
-            return ResponseEntity.badRequest().body(response);
-        }
+            UserVO user = userMapper.selectUserById(userId);
+            if (user != null && user.getProfileImg() != null) {
+                String profileImg = user.getProfileImg();
+                String realUploadsPath = request.getServletContext().getRealPath("/uploads");
+                Path filePath = Paths.get(realUploadsPath, "profile", profileImg);
 
-        try {
-            if (userMapper != null) {
-                UserVO user = userMapper.selectUserById(userId);
-                if (user != null && user.getProfileImg() != null && !user.getProfileImg().trim().isEmpty()) {
-                    String savedFilename = user.getProfileImg();
-
-                    // 배포 폴더 내 /uploads/profile/<savedFilename> 물리 파일 삭제
-                    String realUploadsPath = request.getServletContext().getRealPath("/uploads");
-                    Path filePath = Paths.get(realUploadsPath, "profile", savedFilename);
-
+                if (Files.exists(filePath)) {
                     Files.deleteIfExists(filePath);
 
                     // users 테이블 profile_img 컬럼 값 NULL 초기화
@@ -207,6 +247,20 @@ public class ProfileController {
             try {
                 userId = Long.parseLong(userIdParam.trim());
             } catch (NumberFormatException ignored) {}
+        }
+        if (userId == null && request.getSession(false) != null) {
+            Object sUserId = request.getSession(false).getAttribute("userId");
+            if (sUserId instanceof Number) {
+                userId = ((Number) sUserId).longValue();
+            } else if (sUserId instanceof String) {
+                try { userId = Long.parseLong((String) sUserId); } catch (Exception ignored) {}
+            }
+            if (userId == null) {
+                Object sUser = request.getSession(false).getAttribute("user");
+                if (sUser instanceof UserVO) {
+                    userId = ((UserVO) sUser).getUserId();
+                }
+            }
         }
         if (userId == null) {
             String authHeader = request.getHeader("Authorization");

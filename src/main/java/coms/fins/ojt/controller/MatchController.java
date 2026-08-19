@@ -58,6 +58,9 @@ public class MatchController {
                 userId = Long.parseLong(userIdCookie.trim());
             } catch (NumberFormatException ignored) {}
         }
+        if (userId == null && request.getSession(false) != null) {
+            userId = (Long) request.getSession(false).getAttribute("userId");
+        }
         if (userId == null) {
             String authHeader = request.getHeader("Authorization");
             String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");
@@ -88,6 +91,9 @@ public class MatchController {
             try {
                 userId = Long.parseLong(userIdCookie.trim());
             } catch (NumberFormatException ignored) {}
+        }
+        if (userId == null && request.getSession(false) != null) {
+            userId = (Long) request.getSession(false).getAttribute("userId");
         }
         if (userId == null) {
             String authHeader = request.getHeader("Authorization");
@@ -186,7 +192,9 @@ public class MatchController {
                 userId = Long.parseLong(userIdCookie.trim());
             } catch (NumberFormatException ignored) {}
         }
-
+        if (userId == null && request.getSession(false) != null) {
+            userId = (Long) request.getSession(false).getAttribute("userId");
+        }
         if (userId == null) {
             String authHeader = request.getHeader("Authorization");
             String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");

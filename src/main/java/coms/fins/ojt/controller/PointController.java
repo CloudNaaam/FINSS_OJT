@@ -43,23 +43,25 @@ public class PointController {
     @Transactional
     public ResponseEntity<Map<String, Object>> sendPoint(
             @RequestBody(required = false) Map<String, Object> requestBody,
-            @CookieValue(value = "user_id", required = false) String userIdCookie) {
+            @CookieValue(value = "user_id", required = false) String userIdCookie,
+            HttpServletRequest request) {
 
         Map<String, Object> response = new HashMap<>();
 
-        // 1. 로그인 여부 검증
-        if (userIdCookie == null || userIdCookie.isBlank()) {
-            response.put("success", false);
-            response.put("message", "로그인이 필요한 서비스입니다.");
-            return ResponseEntity.ok(response);
+        Long senderId = null;
+        if (userIdCookie != null && !userIdCookie.isBlank()) {
+            try {
+                senderId = Long.parseLong(userIdCookie.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+        if (senderId == null && request.getSession(false) != null) {
+            senderId = (Long) request.getSession(false).getAttribute("userId");
         }
 
-        Long senderId;
-        try {
-            senderId = Long.parseLong(userIdCookie.trim());
-        } catch (NumberFormatException e) {
+        // 1. 로그인 여부 검증
+        if (senderId == null) {
             response.put("success", false);
-            response.put("message", "올바르지 않은 사용자 세션입니다.");
+            response.put("message", "로그인이 필요한 서비스입니다.");
             return ResponseEntity.ok(response);
         }
 
@@ -157,7 +159,9 @@ public class PointController {
                 userId = Long.parseLong(userIdCookie.trim());
             } catch (NumberFormatException ignored) {}
         }
-
+        if (userId == null && request.getSession(false) != null) {
+            userId = (Long) request.getSession(false).getAttribute("userId");
+        }
         if (userId == null) {
             String authHeader = request.getHeader("Authorization");
             String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");

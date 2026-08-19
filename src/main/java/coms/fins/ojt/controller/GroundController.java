@@ -314,14 +314,19 @@ public class GroundController {
     }
 
     private Long parseUserIdCookie(String userIdCookie) {
-        if (userIdCookie == null || userIdCookie.trim().isEmpty()) {
-            return null;
+        if (userIdCookie != null && !userIdCookie.trim().isEmpty()) {
+            try {
+                return Long.parseLong(userIdCookie.trim());
+            } catch (NumberFormatException ignored) {}
         }
         try {
-            return Long.parseLong(userIdCookie.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
+            org.springframework.web.context.request.ServletRequestAttributes attrs = 
+                    (org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs != null && attrs.getRequest() != null && attrs.getRequest().getSession(false) != null) {
+                return (Long) attrs.getRequest().getSession(false).getAttribute("userId");
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     private GroundVO parseGroundXml(String xmlData, Long managerId) {
