@@ -16,7 +16,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 @RestController
-@RequestMapping("/api/profile")
+@RequestMapping("/api")
 public class ProfileController {
 
     @Autowired
@@ -25,7 +25,11 @@ public class ProfileController {
     @Autowired
     private coms.fins.ojt.service.UserService userService;
 
-    @GetMapping("/me")
+    /**
+     * 내 프로필 정보 조회 API (GET /api/me 및 GET /api/profile/me)
+     * [취약점/요구사항: 비밀번호 마스킹 없이 그대로 반환]
+     */
+    @GetMapping({"/me", "/profile/me"})
     public ResponseEntity<UserVO> getMyProfile(
             @CookieValue(value = "user_id", required = false) String userIdParam,
             HttpServletRequest request) {
@@ -68,15 +72,18 @@ public class ProfileController {
                 return ResponseEntity.notFound().build();
             }
 
-            // 보안을 위해 비밀번호 제거
-            user.setPassword(null);
+            /*
+             * [요구사항 / 취약점 실습 포인트]
+             * 비밀번호를 마스킹하거나 제거(null)하지 않고 DB 저장 값 그대로 노출
+             */
+
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @PostMapping("/imgup")
+    @PostMapping({"/imgup", "/profile/imgup"})
     public ResponseEntity<Map<String, Object>> uploadProfileImg(
             @RequestParam("profile_img") MultipartFile file,
             @CookieValue(value = "user_id", required = false) String userIdParam,
@@ -170,7 +177,7 @@ public class ProfileController {
         }
     }
 
-    @DeleteMapping("/imagedel")
+    @DeleteMapping({"/imagedel", "/profile/imagedel"})
     public ResponseEntity<Map<String, Boolean>> deleteProfileImg(
             @CookieValue(value = "user_id", required = false) String userIdParam,
             HttpServletRequest request) {
@@ -232,9 +239,9 @@ public class ProfileController {
     }
 
     /**
-     * 회원 정보 수정 API (POST /api/profile/update)
+     * 회원 정보 수정 API (POST /api/profile/update 및 POST /api/update)
      */
-    @PostMapping("/update")
+    @PostMapping({"/update", "/profile/update"})
     public ResponseEntity<Map<String, Object>> updateProfile(
             @RequestBody(required = false) Map<String, Object> body,
             @CookieValue(value = "user_id", required = false) String userIdParam,
@@ -342,10 +349,10 @@ public class ProfileController {
     }
 
     /**
-     * 회원 정보 수정 - 이메일 변경 인증 코드 발송 API (POST /api/profile/send_code)
+     * 회원 정보 수정 - 이메일 변경 인증 코드 발송 API (POST /api/profile/send_code 및 POST /api/send_code)
      * [취약점/요구사항: 인증 코드 유효 기간 무제한 (제한 시간 없음)]
      */
-    @PostMapping("/send_code")
+    @PostMapping({"/send_code", "/profile/send_code"})
     public ResponseEntity<Map<String, Object>> sendEmailCode(
             @RequestBody(required = false) Map<String, String> requestBody,
             @CookieValue(value = "user_id", required = false) String userIdParam) {
@@ -377,10 +384,10 @@ public class ProfileController {
     }
 
     /**
-     * 회원 정보 수정 - 이메일 변경 인증 코드 검증 API (POST /api/profile/valid_code)
+     * 회원 정보 수정 - 이메일 변경 인증 코드 검증 API (POST /api/profile/valid_code 및 POST /api/valid_code)
      * [취약점/요구사항: 인증 코드 만료 시간 검증 생략]
      */
-    @PostMapping("/valid_code")
+    @PostMapping({"/valid_code", "/profile/valid_code"})
     public ResponseEntity<Map<String, Object>> validEmailCode(
             @RequestBody(required = false) Map<String, String> requestBody) {
 
@@ -406,9 +413,9 @@ public class ProfileController {
 
     /**
      * 회원 탈퇴 (계정 삭제) API
-     * POST/DELETE /api/profile/withdraw
+     * POST/DELETE /api/profile/withdraw 및 POST/DELETE /api/withdraw
      */
-    @RequestMapping(value = {"/withdraw", "/delete"}, method = {RequestMethod.POST, RequestMethod.DELETE})
+    @RequestMapping(value = {"/withdraw", "/delete", "/profile/withdraw", "/profile/delete"}, method = {RequestMethod.POST, RequestMethod.DELETE})
     public ResponseEntity<Map<String, Object>> withdrawAccount(
             @CookieValue(value = "user_id", required = false) String userIdParam,
             HttpServletRequest request,

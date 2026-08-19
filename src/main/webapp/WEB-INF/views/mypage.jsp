@@ -448,7 +448,7 @@
             </div>
             <div class="info-row">
                 <span class="info-label">전화번호</span>
-                <span class="info-value" id="infoPhone">010-9554-4872</span>
+                <span class="info-value" id="infoPhone">-</span>
             </div>
             <div class="info-row">
                 <span class="info-label">성별 / 나이</span>
