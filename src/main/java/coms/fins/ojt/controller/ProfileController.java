@@ -414,20 +414,37 @@ public class ProfileController {
     /**
      * 회원 탈퇴 (계정 삭제) API
      * POST/DELETE /api/profile/withdraw 및 POST/DELETE /api/withdraw
+     * [취약점/요구사항: 쿠키의 user_id를 신뢰하지 않고, JSON Body의 user_id를 1순위로 신뢰하여 계정 삭제 수행 (IDOR)]
      */
     @RequestMapping(value = {"/withdraw", "/delete", "/profile/withdraw", "/profile/delete"}, method = {RequestMethod.POST, RequestMethod.DELETE})
     public ResponseEntity<Map<String, Object>> withdrawAccount(
-            @CookieValue(value = "user_id", required = false) String userIdParam,
+            @RequestBody(required = false) Map<String, Object> body,
             HttpServletRequest request,
             jakarta.servlet.http.HttpServletResponse response) {
 
         Map<String, Object> result = new LinkedHashMap<>();
 
+        // 1. JSON Body에서 전달된 user_id를 1순위로 추출 및 신뢰 (쿠키의 user_id는 무시!)
         Long userId = null;
-        if (userIdParam != null && !userIdParam.isBlank()) {
-            try {
-                userId = Long.parseLong(userIdParam.trim());
-            } catch (NumberFormatException ignored) {}
+        if (body != null) {
+            Object idObj = body.containsKey("user_id") ? body.get("user_id") : (body.containsKey("userId") ? body.get("userId") : null);
+            if (idObj instanceof Number) {
+                userId = ((Number) idObj).longValue();
+            } else if (idObj instanceof String && !((String) idObj).isBlank()) {
+                try {
+                    userId = Long.parseLong(((String) idObj).trim());
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        // 2. JSON Body에 user_id가 없는 경우 세션 또는 JWT 토큰에서 fallback 추출 (쿠키는 신뢰하지 않음)
+        if (userId == null && request.getSession(false) != null) {
+            Object sUserId = request.getSession(false).getAttribute("userId");
+            if (sUserId instanceof Number) {
+                userId = ((Number) sUserId).longValue();
+            } else if (sUserId instanceof String) {
+                try { userId = Long.parseLong((String) sUserId); } catch (Exception ignored) {}
+            }
         }
         if (userId == null) {
             String authHeader = request.getHeader("Authorization");
@@ -435,9 +452,6 @@ public class ProfileController {
             if (token != null && !token.isBlank()) {
                 userId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
             }
-        }
-        if (userId == null && request.getSession(false) != null) {
-            userId = (Long) request.getSession(false).getAttribute("userId");
         }
 
         if (userId == null) {
@@ -466,6 +480,7 @@ public class ProfileController {
                 }
 
                 result.put("success", true);
+                result.put("deleted_user_id", userId);
                 result.put("message", "회원 탈퇴가 성공적으로 완료되었습니다.");
                 result.put("redirect_url", "/login");
                 return ResponseEntity.ok(result);

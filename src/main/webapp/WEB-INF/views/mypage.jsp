@@ -699,6 +699,8 @@
             })
             .then(function(data) {
                 if (!data) return;
+                window.currentUser = data;
+                window.currentUserId = data.userId;
 
                 document.getElementById('userName').textContent = data.name || "사용자";
                 document.getElementById('userUsername').textContent = "@" + (data.username || "user");
@@ -1020,8 +1022,18 @@
             return;
         }
 
+        var csrfVal = document.getElementById('pointCsrfToken') ? document.getElementById('pointCsrfToken').value : (window.sessionCsrfToken || '');
+        var uid = window.currentUserId || (window.currentUser ? window.currentUser.userId : null);
+
         fetch('/api/profile/withdraw', {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: uid,
+                csrfToken: csrfVal
+            })
         })
         .then(function(res) { return res.json(); })
         .then(function(data) {

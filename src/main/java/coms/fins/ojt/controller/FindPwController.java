@@ -17,6 +17,10 @@ public class FindPwController {
     @Autowired
     private UserService userService;
 
+    /**
+     * JSON Body에서 이메일 목록(단일 문자열 또는 JSON 배열) 추출
+     * [취약점: JSON 배열(["victim@finss.com", "attacker@evil.com"]) 수용]
+     */
     private List<String> extractEmails(Object emailObj) {
         List<String> emails = new ArrayList<>();
         if (emailObj == null) {
@@ -63,7 +67,7 @@ public class FindPwController {
 
     /**
      * 비밀번호 찾기 인증 코드 발송 API
-     * [취약점: email이 배열일 경우 1번째 이메일로 유저를 검증하고, 배열 내 모든 이메일(공격자 포함)로 동일한 인증 코드 발송]
+     * [취약점: email이 JSON 배열일 경우 1번째 이메일로 유저를 검증하고, 배열 내 모든 이메일(공격자 포함)로 동일한 인증 코드 발송]
      */
     @PostMapping("/send_code")
     public ResponseEntity<Map<String, Object>> sendCode(@RequestBody(required = false) Map<String, Object> requestData) {
