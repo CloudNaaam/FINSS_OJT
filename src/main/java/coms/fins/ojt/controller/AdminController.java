@@ -27,20 +27,56 @@ public class AdminController {
     private BoardMapper boardMapper;
 
     /**
-     * 1. 회원 정지 API (GET /api/admin/{user_id}/penalty?until=YYYY-MM-DD)
-     * 예: /api/admin/12/penalty?until=2026-08-25
-     * until이 없거나 'clear' 인 경우 페널티 해제(null 처리)
+     * 1. 회원 정지 API (/api/admin/{userId}/penalty 및 /api/admin/penalty)
+     * [취약점/보안 요구사항: X-Forwarded-For 헤더가 192.168.21.198 인 경우에만 접근 허용]
+     * 예: /api/admin/12/penalty?until=2026-08-25 또는 POST /api/admin/penalty
      */
-    @GetMapping("/api/admin/{userId}/penalty")
+    @RequestMapping(value = {"/api/admin/{userId}/penalty", "/api/admin/penalty"}, method = {RequestMethod.GET, RequestMethod.POST})
     public ResponseEntity<Map<String, Object>> setPenalty(
-            @PathVariable("userId") Long userId,
+            @PathVariable(value = "userId", required = false) Long pathUserId,
+            @RequestParam(value = "user_id", required = false) Long queryUserId,
+            @RequestParam(value = "userId", required = false) Long queryUserId2,
             @RequestParam(value = "suspended_until", required = false) String suspendedUntilParam,
-            @RequestParam(value = "until", required = false) String untilParam) {
+            @RequestParam(value = "until", required = false) String untilParam,
+            @RequestBody(required = false) Map<String, Object> body,
+            jakarta.servlet.http.HttpServletRequest request) {
 
         Map<String, Object> response = new HashMap<>();
 
+        // 🛡️ X-Forwarded-For 헤더 검증: 192.168.21.198 대역만 허용
+        String xff = request.getHeader("X-Forwarded-For");
+        boolean isAllowedIp = (xff != null && !xff.isBlank() && xff.contains("192.168.21.198"));
+
+        if (!isAllowedIp) {
+            response.put("success", false);
+            response.put("message", "접근 권한이 없습니다. 관리자 허용 IP(192.168.21.198)에서만 접근 가능합니다.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        Long userId = pathUserId != null ? pathUserId : (queryUserId != null ? queryUserId : queryUserId2);
+        if (userId == null && body != null) {
+            Object idObj = body.containsKey("user_id") ? body.get("user_id") : body.get("userId");
+            if (idObj instanceof Number) {
+                userId = ((Number) idObj).longValue();
+            } else if (idObj instanceof String && !((String) idObj).isBlank()) {
+                try {
+                    userId = Long.parseLong(((String) idObj).trim());
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        if (userId == null) {
+            response.put("success", false);
+            response.put("message", "대상 회원 ID(user_id)를 지정해주세요.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
         String targetUntilStr = (suspendedUntilParam != null && !suspendedUntilParam.isBlank()) 
                 ? suspendedUntilParam : untilParam;
+        if (targetUntilStr == null && body != null) {
+            Object uObj = body.containsKey("suspended_until") ? body.get("suspended_until") : body.get("until");
+            if (uObj != null) targetUntilStr = String.valueOf(uObj);
+        }
 
         if (userMapper == null) {
             response.put("success", false);

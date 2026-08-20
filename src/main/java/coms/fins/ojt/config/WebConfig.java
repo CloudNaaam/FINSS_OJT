@@ -66,6 +66,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/",                    // 메인 페이지 (유일한 비로그인 허용 화면)
                         "/login",               // 로그인 페이지
                         "/2fa",                 // 2단계 인증 페이지
+                        "/2fa/**",              // 2단계 인증 서브 경로 (완료 페이지 등)
                         "/register",            // 회원가입 페이지
                         "/findpw",              // 비밀번호 찾기 페이지
                         "/findpw/**",

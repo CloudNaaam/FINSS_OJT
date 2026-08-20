@@ -92,23 +92,19 @@ public class AuthController {
                 userService.sendMfaLoginCode(user.getUserId(), user.getEmail(), user.getUsername());
 
                 /*
-                 * [취약점 포인트: 2FA 세션 사전 생성 (Premature Session Creation / 2FA Direct Navigation Bypass)]
-                 * 1단계 ID/PW 인증 성공 시점에 즉시 user_id 쿠키 및 정식 로그인 세션(JSESSIONID)을 발급하고
-                 * 클라이언트를 /2fa 페이지로 리다이렉트시킴.
-                 * -> 공격자가 2FA 인증 코드를 입력하지 않고 다른 탭에서 /profile 이나 /mypage 를 접속/새로고침하면
-                 *    이미 브라우저에 구워진 세션 쿠키로 인해 2FA가 강제로 우회(Bypass)되어 로그인이 완료됨.
+                 * [보안 강화 및 취약점 전환]
+                 * 1단계 ID/PW 인증 성공 시에는 세션 쿠키(user_id / JSESSIONID 풀 세션)를 발급하지 않음.
+                 * 세션에 임시 식별자(MFA_PENDING_USER_ID)만 보관하고 클라이언트를 /2fa 페이지로 이동시킴.
                  */
-                applyFullLogin(user, httpRequest, response);
+                httpRequest.getSession(true).setAttribute("MFA_PENDING_USER_ID", user.getUserId());
 
                 String emailMasked = maskEmail(user.getEmail());
-                String jwtToken = coms.fins.ojt.util.JwtTokenProvider.generateAccessToken(user.getUserId(), user.getUsername());
 
                 result.put("success", true);
                 result.put("mfa_required", true);
                 result.put("message", "2단계 인증 코드가 이메일로 전송되었습니다.");
                 result.put("user_id", user.getUserId());
                 result.put("email", emailMasked);
-                result.put("access_token", jwtToken);
                 result.put("redirect_url", "/2fa");
                 return ResponseEntity.ok(result);
             }
@@ -232,8 +228,12 @@ public class AuthController {
             return ResponseEntity.ok(result);
         }
 
-        // 인증 성공 -> 정식 로그인 세션 및 쿠키 발급
-        return applyFullLogin(user, httpRequest, response);
+        // 인증 성공 -> 정식 로그인 세션 및 쿠키 발급 후 2FA 완료 페이지로 안내
+        applyFullLogin(user, httpRequest, response);
+        result.put("success", true);
+        result.put("user_id", user.getUserId());
+        result.put("redirect_url", "/2fa/success?user_id=" + user.getUserId());
+        return ResponseEntity.ok(result);
     }
 
     /**

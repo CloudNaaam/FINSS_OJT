@@ -79,7 +79,7 @@ public class BoardService {
     }
 
     @Transactional
-    public boolean deleteBoard(Long boardId, Long requestUserId, HttpServletRequest request) {
+    public boolean deleteBoard(Long boardId, Long requestUserId, boolean isAdmin, HttpServletRequest request) {
         if (boardMapper == null || boardId == null) {
             return false;
         }
@@ -92,10 +92,18 @@ public class BoardService {
             }
 
             /*
-             * [취약점 실습 포인트: IDOR / BOLA]
-             * 작성자 본인 확인(boardWriterId == requestUserId) 로직을 생략하여
-             * 로그인된 사용자라면 누구나 boardId만으로 타인의 게시글을 즉시 삭제 가능
+             * [취약점/보안 로직: admin 파라미터가 true/false 로 전달됨]
+             * admin=true 이면 관리자 권한으로 간주하여 작성자 검증을 건너뜀 (Bypass)
+             * admin=false 또는 미전달 시 일반 사용자로 간주하여 본인 글만 삭제 허용
              */
+            if (!isAdmin) {
+                if (requestUserId != null && !requestUserId.equals(board.getWriterId())) {
+                    logger.warn("게시글 삭제 권한이 없습니다. (작성자 불일치) boardWriterId={}, requestUserId={}", board.getWriterId(), requestUserId);
+                    return false;
+                }
+            } else {
+                logger.info("관리자 파라미터(admin=true) 확인됨 - 작성자 검증 우회하여 삭제 수행: boardId={}", boardId);
+            }
 
             // 첨부파일 삭제 처리
             if (board.getFileUuid() != null && !board.getFileUuid().isBlank()) {

@@ -156,6 +156,59 @@ public class HomeController {
         return "2fa";
     }
 
+    /**
+     * 2단계 인증 완료 페이지 (GET /2fa/success)
+     * [취약점 포인트: Forced Browsing / Direct Navigation to Success Page]
+     * 2FA 완료 페이지에 직접 URL로 접속하면 2FA 인증이 완료된 것으로 간주하여 최종 로그인 세션 및 쿠키를 발급!
+     * 1단계 로그인 후 OTP를 몰라도 주소창에 /2fa/success 로 직접 이동하면 2FA가 우회되어 로그인 완료됨.
+     */
+    @GetMapping("/2fa/success")
+    public String twoFactorSuccess(
+            @RequestParam(value = "user_id", required = false) Long paramUserId,
+            @RequestParam(value = "userId", required = false) Long paramUserId2,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Model model) {
+
+        Long userId = paramUserId != null ? paramUserId : paramUserId2;
+        if (userId == null && request.getSession(false) != null) {
+            Object pendingId = request.getSession(false).getAttribute("MFA_PENDING_USER_ID");
+            if (pendingId instanceof Number) {
+                userId = ((Number) pendingId).longValue();
+            } else if (pendingId instanceof String) {
+                try { userId = Long.parseLong((String) pendingId); } catch (Exception ignored) {}
+            }
+        }
+        if (userId == null) {
+            userId = 1L; // 기본 관리자 계정 Fallback
+        }
+
+        UserVO user = userService.getUserById(userId);
+        if (user != null) {
+            // 🎯 [취약점 로직]: 2FA 완료 페이지에 도달한 시점에 최종 세션 쿠키를 구워줌!
+            // 1. user_id 쿠키 발급 (Max-Age=7일, HttpOnly)
+            org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
+                    .from("user_id", String.valueOf(user.getUserId()))
+                    .path("/")
+                    .maxAge(7 * 24 * 60 * 60)
+                    .sameSite("Lax")
+                    .httpOnly(true)
+                    .build();
+            response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, userCookie.toString());
+
+            // 2. 서버 측 HttpSession 속성 등록
+            jakarta.servlet.http.HttpSession session = request.getSession(true);
+            session.setAttribute("userId", user.getUserId());
+            session.setAttribute("username", user.getUsername());
+            session.setAttribute("role", (user.getIsAdmin() != null && user.getIsAdmin() == 1) ? "ROLE_ADMIN" : "ROLE_USER");
+            session.setAttribute("user", user);
+
+            model.addAttribute("user", user);
+        }
+
+        return "2fa-success";
+    }
+
     @GetMapping("/findpw")
     public String findpw() {
         return "findpw";

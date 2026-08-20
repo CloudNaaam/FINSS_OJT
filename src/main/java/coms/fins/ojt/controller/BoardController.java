@@ -114,13 +114,14 @@ public class BoardController {
 
     /**
      * 게시글 삭제 API (DELETE /api/board/delete, DELETE /api/board/{boardId})
-     * [취약점: DELETE 메소드 사용 시 CSRF 토큰 검증 없이 삭제 수행]
+     * [취약점/요구사항: admin=true 파라미터 전달 시 작성자 검증을 건너뛰고 강제 삭제 가능]
      */
     @DeleteMapping({"/api/board/delete", "/api/board/{boardId}", "/board/{boardId}"})
     @ResponseBody
     public ResponseEntity<Map<String, Boolean>> deleteBoard(
             @PathVariable(value = "boardId", required = false) Long pathBoardId,
             @RequestParam(value = "board_id", required = false) Long queryBoardId,
+            @RequestParam(value = "admin", required = false) String adminQueryParam,
             @RequestBody(required = false) Map<String, Object> requestData,
             @CookieValue(value = "user_id", required = false) String userIdCookie,
             HttpServletRequest request) {
@@ -171,7 +172,18 @@ public class BoardController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        boolean success = boardService.deleteBoard(boardId, userId, request);
+        // 🎯 admin 파라미터 판별 (QueryParam, JSON Body, RequestParam 모두 수용)
+        boolean isAdmin = false;
+        if ("true".equalsIgnoreCase(adminQueryParam) || "1".equals(adminQueryParam)) {
+            isAdmin = true;
+        } else if (requestData != null && requestData.containsKey("admin")) {
+            Object aObj = requestData.get("admin");
+            isAdmin = Boolean.TRUE.equals(aObj) || "true".equalsIgnoreCase(String.valueOf(aObj)) || "1".equals(String.valueOf(aObj));
+        } else if ("true".equalsIgnoreCase(request.getParameter("admin")) || "1".equals(request.getParameter("admin"))) {
+            isAdmin = true;
+        }
+
+        boolean success = boardService.deleteBoard(boardId, userId, isAdmin, request);
         response.put("success", success);
 
         return ResponseEntity.ok(response);

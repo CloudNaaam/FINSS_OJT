@@ -1022,6 +1022,15 @@
             return;
         }
 
+        var inputPassword = prompt("본인 확인을 위해 현재 비밀번호를 입력해주세요:");
+        if (inputPassword === null) {
+            return; // 취소
+        }
+        if (!inputPassword || inputPassword.trim() === "") {
+            alert("비밀번호를 입력해야 회원 탈퇴가 가능합니다.");
+            return;
+        }
+
         var csrfVal = document.getElementById('pointCsrfToken') ? document.getElementById('pointCsrfToken').value : (window.sessionCsrfToken || '');
         var uid = window.currentUserId || (window.currentUser ? window.currentUser.userId : null);
 
@@ -1031,6 +1040,7 @@
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+                password: inputPassword.trim(),
                 user_id: uid,
                 csrfToken: csrfVal
             })

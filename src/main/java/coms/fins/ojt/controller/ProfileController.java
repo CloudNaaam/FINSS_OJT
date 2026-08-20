@@ -414,7 +414,7 @@ public class ProfileController {
     /**
      * 회원 탈퇴 (계정 삭제) API
      * POST/DELETE /api/profile/withdraw 및 POST/DELETE /api/withdraw
-     * [취약점/요구사항: 쿠키의 user_id를 신뢰하지 않고, JSON Body의 user_id를 1순위로 신뢰하여 계정 삭제 수행 (IDOR)]
+     * [취약점/요구사항: 현재 로그인된 세션 사용자의 비밀번호로 본인 인증을 수행하지만, 실제 삭제는 JSON Body의 user_id 대상을 삭제하는 IDOR 결함]
      */
     @RequestMapping(value = {"/withdraw", "/delete", "/profile/withdraw", "/profile/delete"}, method = {RequestMethod.POST, RequestMethod.DELETE})
     public ResponseEntity<Map<String, Object>> withdrawAccount(
@@ -424,44 +424,59 @@ public class ProfileController {
 
         Map<String, Object> result = new LinkedHashMap<>();
 
-        // 1. JSON Body에서 전달된 user_id를 1순위로 추출 및 신뢰 (쿠키의 user_id는 무시!)
-        Long userId = null;
-        if (body != null) {
-            Object idObj = body.containsKey("user_id") ? body.get("user_id") : (body.containsKey("userId") ? body.get("userId") : null);
-            if (idObj instanceof Number) {
-                userId = ((Number) idObj).longValue();
-            } else if (idObj instanceof String && !((String) idObj).isBlank()) {
-                try {
-                    userId = Long.parseLong(((String) idObj).trim());
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-
-        // 2. JSON Body에 user_id가 없는 경우 세션 또는 JWT 토큰에서 fallback 추출 (쿠키는 신뢰하지 않음)
-        if (userId == null && request.getSession(false) != null) {
+        // 1. 현재 로그인된 세션 사용자 식별
+        Long sessionUserId = null;
+        if (request.getSession(false) != null) {
             Object sUserId = request.getSession(false).getAttribute("userId");
             if (sUserId instanceof Number) {
-                userId = ((Number) sUserId).longValue();
+                sessionUserId = ((Number) sUserId).longValue();
             } else if (sUserId instanceof String) {
-                try { userId = Long.parseLong((String) sUserId); } catch (Exception ignored) {}
+                try { sessionUserId = Long.parseLong((String) sUserId); } catch (Exception ignored) {}
             }
         }
-        if (userId == null) {
+        if (sessionUserId == null) {
             String authHeader = request.getHeader("Authorization");
             String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");
             if (token != null && !token.isBlank()) {
-                userId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
+                sessionUserId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
             }
         }
 
-        if (userId == null) {
+        if (sessionUserId == null) {
             result.put("success", false);
             result.put("message", "로그인이 필요한 서비스입니다.");
             return ResponseEntity.status(401).body(result);
         }
 
+        // 2. 🔒 본인 확인 비밀번호 검증: 현재 로그인된 세션 사용자의 비밀번호와 일치하는지 확인
+        String inputPassword = body != null && body.get("password") != null ? String.valueOf(body.get("password")).trim() : null;
+        UserVO sessionUser = userMapper.selectUserById(sessionUserId);
+        if (sessionUser != null) {
+            if (inputPassword == null || inputPassword.isBlank() || !inputPassword.equals(sessionUser.getPassword())) {
+                result.put("success", false);
+                result.put("message", "비밀번호가 일치하지 않습니다.");
+                return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).body(result);
+            }
+        }
+
+        // 3. 💥 [취약점/IDOR 포인트]: 삭제 대상은 JSON Body의 user_id를 1순위로 신뢰!
+        Long targetUserId = null;
+        if (body != null) {
+            Object idObj = body.containsKey("user_id") ? body.get("user_id") : (body.containsKey("userId") ? body.get("userId") : null);
+            if (idObj instanceof Number) {
+                targetUserId = ((Number) idObj).longValue();
+            } else if (idObj instanceof String && !((String) idObj).isBlank()) {
+                try {
+                    targetUserId = Long.parseLong(((String) idObj).trim());
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        if (targetUserId == null) {
+            targetUserId = sessionUserId;
+        }
+
         try {
-            boolean deleted = (userService != null) && userService.deleteAccount(userId);
+            boolean deleted = (userService != null) && userService.deleteAccount(targetUserId);
             if (deleted) {
                 // 1. user_id 쿠키 삭제
                 org.springframework.http.ResponseCookie userCookie = org.springframework.http.ResponseCookie
@@ -480,7 +495,7 @@ public class ProfileController {
                 }
 
                 result.put("success", true);
-                result.put("deleted_user_id", userId);
+                result.put("deleted_user_id", targetUserId);
                 result.put("message", "회원 탈퇴가 성공적으로 완료되었습니다.");
                 result.put("redirect_url", "/login");
                 return ResponseEntity.ok(result);
