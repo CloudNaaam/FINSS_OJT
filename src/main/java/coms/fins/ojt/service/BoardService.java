@@ -91,11 +91,11 @@ public class BoardService {
                 return false;
             }
 
-            // 작성자 본인 확인 (본인 글만 삭제 허용)
-            if (requestUserId != null && !requestUserId.equals(board.getWriterId())) {
-                logger.warn("게시글 삭제 권한이 없습니다. (작성자 불일치) boardWriterId={}, requestUserId={}", board.getWriterId(), requestUserId);
-                return false;
-            }
+            /*
+             * [취약점 실습 포인트: IDOR / BOLA]
+             * 작성자 본인 확인(boardWriterId == requestUserId) 로직을 생략하여
+             * 로그인된 사용자라면 누구나 boardId만으로 타인의 게시글을 즉시 삭제 가능
+             */
 
             // 첨부파일 삭제 처리
             if (board.getFileUuid() != null && !board.getFileUuid().isBlank()) {
