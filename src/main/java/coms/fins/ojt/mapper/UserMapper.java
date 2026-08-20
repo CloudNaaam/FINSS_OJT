@@ -30,4 +30,5 @@ public interface UserMapper {
     int deleteMatchApplicationsByUserId(@Param("userId") Long userId);
     int deletePointPaymentsByUserId(@Param("userId") Long userId);
     int deleteBoardsByWriterId(@Param("userId") Long userId);
+    int updateMfaStatus(@Param("userId") Long userId, @Param("mfaEnabled") int mfaEnabled);
 }

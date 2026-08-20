@@ -14,6 +14,7 @@ CREATE TABLE users (
     profile_img    VARCHAR2(300 CHAR) DEFAULT NULL,
     penalty_until  TIMESTAMP NULL,
     point          NUMBER DEFAULT 1000 NOT NULL,
+    mfa_enabled    NUMBER(1) DEFAULT 0 NOT NULL,
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
     CONSTRAINT pk_users PRIMARY KEY (user_id),

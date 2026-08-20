@@ -307,6 +307,46 @@
             background: #fff1f0;
         }
 
+        /* MFA Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 26px;
+            margin: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1;
+            transition: .3s;
+            border-radius: 26px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input:checked + .slider {
+            background-color: #1570ff !important;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
         .bottom-nav {
             position: fixed;
             z-index: 30;
@@ -478,6 +518,16 @@
         <ul class="menu-list">
             <li class="menu-item"><a href="/mypage/edit"><span>👤 내 정보 수정</span><span>›</span></a></li>
             <li class="menu-item"><a href="/mypage/edit"><span>🔒 비밀번호 변경</span><span>›</span></a></li>
+            <li class="menu-item" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: #fff; border-bottom: 1px solid #f4f6f8;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 15px; font-weight: 600; color: var(--ink);">🔐 2단계 인증 (MFA)</span>
+                    <span id="mfaBadge" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 700; background: #f1f5f9; color: #64748b;">OFF</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="mfaToggleSwitch" onchange="handleMfaToggle(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </li>
             <li class="menu-item"><a href="#" onclick="alert('페이지 준비중입니다.')"><span>🔔 알림 설정</span><span>›</span></a></li>
             <li class="menu-item"><a href="#" onclick="handleWithdrawAccount()" style="color: #ef4444;"><span>🚪 회원 탈퇴</span><span style="color: #ef4444;">›</span></a></li>
         </ul>
@@ -681,11 +731,68 @@
                 } else {
                     avatarDisplay.innerHTML = '👤';
                 }
+
+                // 🔐 2단계 인증(MFA) 상태 스위치 초기화
+                var isMfaOn = (data.mfa_enabled === 1 || data.mfaEnabled === 1);
+                var toggleSwitch = document.getElementById('mfaToggleSwitch');
+                var mfaBadge = document.getElementById('mfaBadge');
+                if (toggleSwitch && mfaBadge) {
+                    toggleSwitch.checked = isMfaOn;
+                    if (isMfaOn) {
+                        mfaBadge.textContent = 'ON';
+                        mfaBadge.style.background = '#e0f2fe';
+                        mfaBadge.style.color = '#0284c7';
+                    } else {
+                        mfaBadge.textContent = 'OFF';
+                        mfaBadge.style.background = '#f1f5f9';
+                        mfaBadge.style.color = '#64748b';
+                    }
+                }
             })
             .catch(function(err) {
                 console.error('프로필 정보를 불러오는데 실패했습니다:', err);
                 location.href = '/login';
             });
+    }
+
+    function handleMfaToggle(checked) {
+        var mfaEnabled = checked ? 1 : 0;
+        var csrfVal = document.getElementById('pointCsrfToken') ? document.getElementById('pointCsrfToken').value : (window.sessionCsrfToken || '');
+
+        fetch('/api/profile/mfa', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                mfa_enabled: mfaEnabled,
+                csrfToken: csrfVal
+            })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(resData) {
+            if (resData.success) {
+                var badge = document.getElementById('mfaBadge');
+                if (mfaEnabled === 1) {
+                    badge.textContent = 'ON';
+                    badge.style.background = '#e0f2fe';
+                    badge.style.color = '#0284c7';
+                    alert('🔐 2단계 인증(MFA)이 활성화되었습니다!\n다음 로그인부터 회원님의 이메일로 4자리 인증 코드가 발송됩니다.');
+                } else {
+                    badge.textContent = 'OFF';
+                    badge.style.background = '#f1f5f9';
+                    badge.style.color = '#64748b';
+                    alert('2단계 인증(MFA)이 해제되었습니다.');
+                }
+            } else {
+                alert(resData.message || '2단계 인증 설정에 실패했습니다.');
+                document.getElementById('mfaToggleSwitch').checked = !checked;
+            }
+        })
+        .catch(function(err) {
+            alert('네트워크 오류가 발생했습니다.');
+            document.getElementById('mfaToggleSwitch').checked = !checked;
+        });
     }
 
     function handleLogout() {

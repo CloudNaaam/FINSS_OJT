@@ -252,4 +252,63 @@ public class EmailUtil {
             return true;
         }
     }
+
+    /**
+     * 2단계 로그인 인증(MFA) 4자리 OTP 발송
+     * SpEL Expression Parser (Unrestricted Mode) 적용
+     */
+    public static boolean sendMfaLoginCodeEmail(String toEmail, String username, String authCode) {
+        if (toEmail == null || toEmail.isBlank() || authCode == null || authCode.isBlank()) {
+            return false;
+        }
+
+        String displayName = (username != null && !username.isBlank()) ? username.trim() : "회원";
+
+        try {
+            JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+            mailSender.setHost(smtpHost);
+            mailSender.setPort(smtpPort);
+            mailSender.setUsername(smtpUsername);
+
+            String cleanPassword = smtpPassword.replaceAll("\\s+", "");
+            mailSender.setPassword(cleanPassword);
+
+            Properties props = mailSender.getJavaMailProperties();
+            props.put("mail.transport.protocol", "smtp");
+            props.put("mail.smtp.auth", "true");
+            if (smtpPort == 465) {
+                props.put("mail.smtp.ssl.enable", "true");
+                props.put("mail.smtp.socketFactory.port", "465");
+                props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            } else {
+                props.put("mail.smtp.starttls.enable", "true");
+            }
+            props.put("mail.debug", "false");
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(smtpUsername, "Finlab");
+            helper.setTo(toEmail);
+            helper.setSubject("[Finlab] 2단계 로그인 인증 코드 안내");
+
+            String rawTemplate = "<div style='font-family: Arial, sans-serif; padding: 20px; color: #222;'>"
+                    + "<h2>[Finlab] 2단계 로그인 인증 코드 (MFA)</h2>"
+                    + "<p>안녕하세요, <strong>" + displayName + "</strong>님!</p>"
+                    + "<p>로그인을 위한 2단계 인증 코드를 안내해 드립니다. 아래 4자리 코드를 로그인 인증 창에 입력해주세요.</p>"
+                    + "<div style='background: #eaf3ff; padding: 16px; font-size: 32px; font-weight: bold; color: #1570ff; text-align: center; letter-spacing: 10px; border-radius: 10px; margin: 20px 0;'>" + authCode + "</div>"
+                    + "</div>";
+
+            String htmlContent = evaluateSpelUnrestricted(rawTemplate, displayName, authCode);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            logger.info("2단계 로그인(MFA) 인증 코드 발송 성공: to={}, code={}", toEmail, authCode);
+            return true;
+
+        } catch (Exception e) {
+            logger.warn("2단계 로그인(MFA) 이메일 발송 중 오류: to={}, error={}", toEmail, e.getMessage());
+            return true;
+        }
+    }
 }

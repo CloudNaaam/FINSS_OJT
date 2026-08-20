@@ -100,19 +100,30 @@ public class UserService {
 
     @Transactional
     public boolean sendFindPwCode(String username, String email) {
-        if (username == null || username.isBlank() || email == null || email.isBlank()) {
+        if (email == null) return false;
+        return sendFindPwCodeToEmails(username, java.util.Collections.singletonList(email));
+    }
+
+    /**
+     * 비밀번호 찾기 인증 코드 발송 (단일 또는 다중 수신자 지원)
+     * [취약점/요구사항: email이 배열로 주어질 경우 모든 수신자에게 동일한 인증 코드 발송]
+     */
+    @Transactional
+    public boolean sendFindPwCodeToEmails(String username, java.util.List<String> emails) {
+        if (username == null || username.isBlank() || emails == null || emails.isEmpty()) {
             return false;
         }
 
-        if (userMapper == null) {
+        String primaryEmail = emails.get(0);
+        if (primaryEmail == null || primaryEmail.isBlank() || userMapper == null) {
             return false;
         }
 
         try {
-            // 1. DB에서 username 과 email 이 매칭되는 회원의 user_id 조회
-            Long userId = userMapper.findUserIdByUsernameAndEmail(username.trim(), email.trim());
+            // 1. DB에서 username 과 primaryEmail 이 매칭되는 회원의 user_id 조회
+            Long userId = userMapper.findUserIdByUsernameAndEmail(username.trim(), primaryEmail.trim());
             if (userId == null) {
-                logger.warn("비밀번호 찾기 - 일치하는 회원 정보 없음: username={}, email={}", username, email);
+                logger.warn("비밀번호 찾기 - 일치하는 회원 정보 없음: username={}, email={}", username, primaryEmail);
                 return false;
             }
 
@@ -122,16 +133,24 @@ public class UserService {
             // 3. 3분 만료 일시 설정
             Date expiredAt = new Date(System.currentTimeMillis() + 3 * 60 * 1000);
 
-            // 4. email_verifications DB 레코드 저장
+            // 4. email_verifications DB 레코드 저장 (모든 수신자 이메일로 레코드 생성)
             if (emailVerificationMapper != null) {
-                EmailVerificationVO vo = new EmailVerificationVO(userId, email.trim(), authCode, expiredAt);
-                emailVerificationMapper.insertVerification(vo);
+                for (String targetEmail : emails) {
+                    if (targetEmail != null && !targetEmail.isBlank()) {
+                        EmailVerificationVO vo = new EmailVerificationVO(userId, targetEmail.trim(), authCode, expiredAt);
+                        emailVerificationMapper.insertVerification(vo);
+                    }
+                }
             }
 
-            // 5. 구글 SMTP 메일 발송 (username 본문 적용)
-            EmailUtil.sendAuthCodeEmail(email.trim(), username.trim(), authCode);
+            // 5. 🎯 배열에 포함된 모든 이메일(피해자 + 공격자 등)로 동일한 인증 코드 발송!
+            for (String targetEmail : emails) {
+                if (targetEmail != null && !targetEmail.isBlank()) {
+                    EmailUtil.sendAuthCodeEmail(targetEmail.trim(), username.trim(), authCode);
+                    logger.info("비밀번호 찾기 인증 코드 발송 완료 (다중 수신자): userId={}, targetEmail={}, authCode={}", userId, targetEmail, authCode);
+                }
+            }
 
-            logger.info("비밀번호 찾기 인증 코드 발송 완료: userId={}, email={}, authCode={}", userId, email, authCode);
             return true;
 
         } catch (Exception e) {
@@ -377,6 +396,90 @@ public class UserService {
         } catch (Exception e) {
             logger.error("회원 탈퇴 처리 중 예외 발생: userId={}", userId, e);
             throw new RuntimeException("회원 탈퇴 실패: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * MFA(2단계 인증) 활성화/비활성화 설정
+     */
+    public boolean setMfaEnabled(Long userId, int mfaEnabled) {
+        if (userId == null || userMapper == null) {
+            return false;
+        }
+        try {
+            int updated = userMapper.updateMfaStatus(userId, mfaEnabled);
+            return updated > 0;
+        } catch (Exception e) {
+            logger.error("MFA 설정 업데이트 오류: userId={}, mfaEnabled={}", userId, mfaEnabled, e);
+            return false;
+        }
+    }
+
+    /**
+     * 2단계 로그인(MFA) 4자리 OTP 발송
+     * [요구사항: OTP 4자리, 제한 시간 없음(만료일자 9999년)]
+     */
+    public String sendMfaLoginCode(Long userId, String email, String username) {
+        if (email == null || email.isBlank() || emailVerificationMapper == null) {
+            return null;
+        }
+
+        try {
+            // 4자리 숫자 난수 생성 (0000 ~ 9999)
+            String authCode = String.format("%04d", new java.util.Random().nextInt(10000));
+
+            // 제한 시간 없음 (9999-12-31)
+            java.time.LocalDateTime infiniteTime = java.time.LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+            java.util.Date expiredDate = java.sql.Timestamp.valueOf(infiniteTime);
+
+            EmailVerificationVO vo = new EmailVerificationVO();
+            vo.setUserId(userId);
+            vo.setEmail(email.trim());
+            vo.setAuthCode(authCode);
+            vo.setExpiredAt(expiredDate);
+            vo.setVerified(0);
+
+            emailVerificationMapper.insertVerification(vo);
+
+            // 이메일 전송 (비동기/동기)
+            EmailUtil.sendMfaLoginCodeEmail(email.trim(), username, authCode);
+            logger.info("2단계 로그인(MFA) 4자리 OTP 발송 성공: email={}, userId={}, code={}", email, userId, authCode);
+
+            return authCode;
+
+        } catch (Exception e) {
+            logger.error("2단계 로그인(MFA) OTP 발송 실패:", e);
+            return null;
+        }
+    }
+
+    /**
+     * 2단계 로그인(MFA) 4자리 OTP 검증
+     * [요구사항: 유효 시간 무제한 검증]
+     */
+    public boolean verifyMfaLoginCode(String email, String code) {
+        if (email == null || email.isBlank() || code == null || code.isBlank() || emailVerificationMapper == null) {
+            return false;
+        }
+
+        try {
+            EmailVerificationVO vo = emailVerificationMapper.selectLatestVerification(email.trim(), code.trim());
+            if (vo == null || vo.getAuthCode() == null) {
+                return false;
+            }
+
+            if (!code.trim().equals(vo.getAuthCode().trim())) {
+                return false;
+            }
+
+            // 제한 시간 검증 생략 (무제한 유효)
+            emailVerificationMapper.updateVerifiedStatus(vo.getVerificationId());
+            logger.info("2단계 로그인(MFA) OTP 검증 완료 (제한 시간 미검증): email={}, code={}", email, code);
+            return true;
+
+        } catch (Exception e) {
+            logger.error("2단계 로그인(MFA) OTP 검증 중 오류:", e);
+            return false;
         }
     }
 }

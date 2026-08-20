@@ -480,4 +480,78 @@ public class ProfileController {
             return ResponseEntity.internalServerError().body(result);
         }
     }
+
+    /**
+     * MFA(2단계 인증) 활성화/비활성화 설정 API (POST /api/profile/mfa 및 POST /api/mfa)
+     */
+    @PostMapping({"/mfa", "/profile/mfa"})
+    public ResponseEntity<Map<String, Object>> toggleMfa(
+            @RequestBody(required = false) Map<String, Object> body,
+            @CookieValue(value = "user_id", required = false) String userIdParam,
+            HttpServletRequest request) {
+
+        Map<String, Object> result = new LinkedHashMap<>();
+
+        Long userId = null;
+        if (userIdParam != null && !userIdParam.isBlank()) {
+            try {
+                userId = Long.parseLong(userIdParam.trim());
+            } catch (NumberFormatException ignored) {}
+        }
+        if (userId == null && request.getSession(false) != null) {
+            Object sUserId = request.getSession(false).getAttribute("userId");
+            if (sUserId instanceof Number) {
+                userId = ((Number) sUserId).longValue();
+            } else if (sUserId instanceof String) {
+                try { userId = Long.parseLong((String) sUserId); } catch (Exception ignored) {}
+            }
+        }
+        if (userId == null) {
+            String authHeader = request.getHeader("Authorization");
+            String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");
+            if (token != null && !token.isBlank()) {
+                userId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
+            }
+        }
+
+        if (userId == null) {
+            result.put("success", false);
+            result.put("message", "로그인이 필요한 서비스입니다.");
+            return ResponseEntity.status(401).body(result);
+        }
+
+        int mfaEnabled = 0;
+        if (body != null) {
+            if (body.get("mfa_enabled") instanceof Number) {
+                mfaEnabled = ((Number) body.get("mfa_enabled")).intValue();
+            } else if (body.get("mfa_enabled") instanceof Boolean) {
+                mfaEnabled = ((Boolean) body.get("mfa_enabled")) ? 1 : 0;
+            } else if (body.get("mfa_enabled") instanceof String) {
+                try {
+                    mfaEnabled = Integer.parseInt((String) body.get("mfa_enabled"));
+                } catch (Exception ignored) {
+                    mfaEnabled = "true".equalsIgnoreCase((String) body.get("mfa_enabled")) ? 1 : 0;
+                }
+            }
+        }
+
+        boolean success = userService.setMfaEnabled(userId, mfaEnabled);
+        if (success) {
+            // 세션 내 user 객체 갱신
+            if (request.getSession(false) != null) {
+                Object sUser = request.getSession(false).getAttribute("user");
+                if (sUser instanceof UserVO) {
+                    ((UserVO) sUser).setMfaEnabled(mfaEnabled);
+                }
+            }
+            result.put("success", true);
+            result.put("mfa_enabled", mfaEnabled);
+            result.put("message", mfaEnabled == 1 ? "2단계 인증(MFA)이 설정되었습니다." : "2단계 인증(MFA)이 해제되었습니다.");
+            return ResponseEntity.ok(result);
+        } else {
+            result.put("success", false);
+            result.put("message", "2단계 인증 설정 변경에 실패했습니다.");
+            return ResponseEntity.badRequest().body(result);
+        }
+    }
 }

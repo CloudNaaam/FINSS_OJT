@@ -214,42 +214,73 @@
     </header>
 
     <main class="content">
-        <section class="intro">
-            <h1>Finlab 로그인</h1>
-            <p>서비스 이용을 위해 아이디와 비밀번호를 입력해 주세요.</p>
-        </section>
+        <!-- 1단계 ID/PW 로그인 영역 -->
+        <div id="standardLoginSection">
+            <section class="intro">
+                <h1>Finlab 로그인</h1>
+                <p>서비스 이용을 위해 아이디와 비밀번호를 입력해 주세요.</p>
+            </section>
 
-        <form id="loginForm" novalidate>
-            <!-- 1. 아이디 (username) -->
-            <div class="field">
-                <label class="field-label" for="username">아이디</label>
-                <input class="input" id="username" name="username" type="text"
-                       placeholder="아이디를 입력해 주세요"
-                       autocomplete="username" required>
-            </div>
-
-            <!-- 2. 비밀번호 (password) -->
-            <div class="field">
-                <label class="field-label" for="password">비밀번호</label>
-                <div class="password-wrap">
-                    <input class="input" id="password" name="password" type="password"
-                           placeholder="비밀번호를 입력해 주세요"
-                           autocomplete="current-password" required>
-                    <button class="password-toggle" id="passwordToggle" type="button">보기</button>
+            <form id="loginForm" novalidate>
+                <!-- 1. 아이디 (username) -->
+                <div class="field">
+                    <label class="field-label" for="username">아이디</label>
+                    <input class="input" id="username" name="username" type="text"
+                           placeholder="아이디를 입력해 주세요"
+                           autocomplete="username" required>
                 </div>
-            </div>
 
-            <p class="error-message" id="errorMessage">아이디와 비밀번호를 확인해 주세요.</p>
+                <!-- 2. 비밀번호 (password) -->
+                <div class="field">
+                    <label class="field-label" for="password">비밀번호</label>
+                    <div class="password-wrap">
+                        <input class="input" id="password" name="password" type="password"
+                               placeholder="비밀번호를 입력해 주세요"
+                               autocomplete="current-password" required>
+                        <button class="password-toggle" id="passwordToggle" type="button">보기</button>
+                    </div>
+                </div>
 
-            <button class="login-button" type="submit" id="submitBtn">로그인</button>
+                <p class="error-message" id="errorMessage">아이디와 비밀번호를 확인해 주세요.</p>
 
-            <!-- 하단 링크: 비밀번호 찾기 & 회원가입 -->
-            <div class="bottom-links">
-                <a href="/findpw">비밀번호 찾기</a>
-                <span class="dot">·</span>
-                <a href="/register">회원가입</a>
-            </div>
-        </form>
+                <button class="login-button" type="submit" id="submitBtn">로그인</button>
+
+                <!-- 하단 링크: 비밀번호 찾기 & 회원가입 -->
+                <div class="bottom-links">
+                    <a href="/findpw">비밀번호 찾기</a>
+                    <span class="dot">·</span>
+                    <a href="/register">회원가입</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- 🔐 2단계 인증(MFA) OTP 영역 (MFA 활성 계정 로그인 시 표시) -->
+        <div id="mfaSection" style="display: none;">
+            <section class="intro">
+                <div style="font-size: 36px; margin-bottom: 8px;">🔐</div>
+                <h1>2단계 로그인 인증</h1>
+                <p>보안 강화를 위해 2단계 인증이 활성화되어 있습니다.<br/>가입된 이메일 (<strong id="mfaTargetEmail" style="color: var(--blue);"></strong>)로 전송된 <strong>4자리 인증 코드</strong>를 입력해 주세요.</p>
+            </section>
+
+            <form id="mfaForm" novalidate>
+                <div class="field">
+                    <label class="field-label" for="mfaCode" style="text-align: center;">4자리 인증 코드 (제한 시간 없음)</label>
+                    <input class="input" id="mfaCode" name="mfaCode" type="text" maxlength="4"
+                           placeholder="••••"
+                           style="text-align: center; font-size: 26px; letter-spacing: 12px; font-weight: 800; height: 58px;"
+                           autocomplete="one-time-code" required>
+                </div>
+
+                <p class="error-message" id="mfaErrorMessage">인증 코드가 올바르지 않습니다.</p>
+
+                <button class="login-button" type="submit" id="mfaSubmitBtn">인증 완료 및 로그인</button>
+
+                <div class="bottom-links" style="flex-direction: column; gap: 10px; margin-top: 20px;">
+                    <button type="button" onclick="handleResendMfaCode()" style="color: var(--blue); font-weight: 700;">🔄 인증 코드 다시 받기</button>
+                    <button type="button" onclick="cancelMfaLogin()" style="color: #888;">← 다른 아이디로 로그인</button>
+                </div>
+            </form>
+        </div>
     </main>
 </div>
 
@@ -259,6 +290,15 @@
     const password = document.getElementById("password");
     const passwordToggle = document.getElementById("passwordToggle");
     const errorMessage = document.getElementById("errorMessage");
+
+    const standardLoginSection = document.getElementById("standardLoginSection");
+    const mfaSection = document.getElementById("mfaSection");
+    const mfaForm = document.getElementById("mfaForm");
+    const mfaCode = document.getElementById("mfaCode");
+    const mfaErrorMessage = document.getElementById("mfaErrorMessage");
+    const mfaTargetEmail = document.getElementById("mfaTargetEmail");
+
+    let currentPendingUserId = null;
 
     // 비밀번호 보기 / 숨김 토글
     passwordToggle.addEventListener("click", function () {
@@ -273,7 +313,15 @@
         });
     });
 
-    // 로그인 폼 제출 이벤트
+    if (mfaCode) {
+        mfaCode.addEventListener("input", function () {
+            mfaErrorMessage.classList.remove("show");
+            // 숫자만 허용
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+
+    // 1단계 로그인 폼 제출
     form.addEventListener("submit", function (event) {
         event.preventDefault();
 
@@ -311,7 +359,15 @@
                 if (data.access_token) {
                     localStorage.setItem('access_token', data.access_token);
                 }
-                location.href = "/mypage";
+
+                // 🔐 2단계 인증(MFA)이 필요한 경우 /2fa 페이지로 리다이렉트
+                if (data.mfa_required) {
+                    location.href = data.redirect_url || "/2fa";
+                    return;
+                }
+
+                // MFA가 아닌 일반 로그인 완료
+                location.href = data.redirect_url || "/mypage";
             } else {
                 if (data && data.message) {
                     alert(data.message);
@@ -324,6 +380,84 @@
             errorMessage.classList.add("show");
         });
     });
+
+    // 2단계 MFA 인증 폼 제출
+    mfaForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const codeVal = mfaCode.value.trim();
+        if (!codeVal || codeVal.length !== 4) {
+            alert("4자리 인증 코드를 정확히 입력해 주세요.");
+            mfaCode.focus();
+            return;
+        }
+
+        fetch("/api/auth/mfa/verify", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                user_id: currentPendingUserId,
+                code: codeVal
+            })
+        })
+        .then(function (res) {
+            return res.json();
+        })
+        .then(function (data) {
+            if (data && data.success) {
+                if (data.access_token) {
+                    localStorage.setItem('access_token', data.access_token);
+                }
+                alert("2단계 인증이 완료되었습니다!");
+                location.href = data.redirect_url || "/mypage";
+            } else {
+                if (data && data.message) {
+                    alert(data.message);
+                }
+                mfaErrorMessage.classList.add("show");
+                mfaCode.focus();
+            }
+        })
+        .catch(function (err) {
+            console.error("MFA 인증 오류:", err);
+            mfaErrorMessage.classList.add("show");
+        });
+    });
+
+    // MFA 코드 재발송
+    function handleResendMfaCode() {
+        fetch("/api/auth/mfa/resend", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                user_id: currentPendingUserId
+            })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.success) {
+                alert("인증 코드가 이메일로 다시 발송되었습니다.");
+            } else {
+                alert(data.message || "인증 코드 재발송에 실패했습니다.");
+            }
+        })
+        .catch(function(err) {
+            alert("네트워크 오류가 발생했습니다.");
+        });
+    }
+
+    // MFA 취소 및 1단계로 복귀
+    function cancelMfaLogin() {
+        currentPendingUserId = null;
+        mfaSection.style.display = "none";
+        standardLoginSection.style.display = "block";
+        password.value = "";
+        password.focus();
+    }
 </script>
 </body>
 </html>

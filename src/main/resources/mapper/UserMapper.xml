@@ -22,11 +22,11 @@
     </select>
 
     <select id="findByUsername" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil, point FROM users WHERE username = '${username}'
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil, point, NVL(mfa_enabled, 0) AS mfaEnabled FROM users WHERE username = '${username}'
     </select>
 
     <select id="selectUserById" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil, point FROM users WHERE user_id = #{userId}
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil, point, NVL(mfa_enabled, 0) AS mfaEnabled FROM users WHERE user_id = #{userId}
     </select>
 
     <!-- Raw Query 로그인 (PreparedStatement 미사용, ${} 가공되지 않은 문자열 매핑 사용) -->
@@ -51,7 +51,7 @@
     </update>
 
     <select id="searchUsers" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id AS userId, username, name, email, phone_number AS phoneNumber, is_admin AS isAdmin, is_manager AS isManager, created_at AS createdAt, penalty_until AS penaltyUntil, point
+        SELECT user_id AS userId, username, name, email, phone_number AS phoneNumber, is_admin AS isAdmin, is_manager AS isManager, created_at AS createdAt, penalty_until AS penaltyUntil, point, NVL(mfa_enabled, 0) AS mfaEnabled
         FROM users
         WHERE username LIKE '%' || '${keyword}' || '%' OR name LIKE '%' || '${keyword}' || '%' OR email LIKE '%' || '${keyword}' || '%'
     </select>
@@ -73,7 +73,7 @@
     </update>
 
     <select id="findByUsernameOrName" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil, point
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil, point, NVL(mfa_enabled, 0) AS mfaEnabled
         FROM users
         WHERE username = #{target} OR name = #{target}
         FETCH FIRST 1 ROWS ONLY
@@ -88,16 +88,21 @@
             <if test="age != null">age = #{age},</if>
             <if test="gender != null">gender = #{gender},</if>
             <if test="password != null and password != ''">password = #{password},</if>
+            <if test="mfaEnabled != null">mfa_enabled = #{mfaEnabled},</if>
         </set>
         WHERE user_id = #{userId}
     </update>
 
     <select id="findByEmail" resultType="coms.fins.ojt.domain.UserVO">
-        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil, point
+        SELECT user_id, username, password, name, age, gender, email, phone_number, is_admin, is_manager, profile_img, created_at, penalty_until AS penaltyUntil, point, NVL(mfa_enabled, 0) AS mfaEnabled
         FROM users
         WHERE email = #{email}
         FETCH FIRST 1 ROWS ONLY
     </select>
+
+    <update id="updateMfaStatus">
+        UPDATE users SET mfa_enabled = #{mfaEnabled} WHERE user_id = #{userId}
+    </update>
 
     <delete id="deleteUserById">
         DELETE FROM users WHERE user_id = #{userId}

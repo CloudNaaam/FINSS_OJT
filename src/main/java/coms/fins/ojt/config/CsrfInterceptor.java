@@ -29,18 +29,14 @@ public class CsrfInterceptor implements HandlerInterceptor {
         }
 
         String requestURI = request.getRequestURI();
-        if (requestURI.equals("/api/auth/login") 
-                || requestURI.equals("/api/auth/register")
-                || requestURI.equals("/api/auth/dup")
-                || requestURI.equals("/api/auth/send_code")
-                || requestURI.equals("/api/auth/valid_code")
-                || requestURI.equals("/api/auth/logout")
+        if (requestURI.startsWith("/api/auth/")
                 || requestURI.equals("/logout")
                 || requestURI.startsWith("/api/findpw/")
                 || requestURI.startsWith("/api/point/charge/")
                 || requestURI.startsWith("/mock-pg/")
                 || requestURI.startsWith("/api/matches/")
                 || requestURI.startsWith("/api/profile/")
+                || requestURI.startsWith("/api/mfa")
                 || requestURI.startsWith("/api/admin/")
                 || requestURI.startsWith("/api/user/")
                 || requestURI.equals("/api/users")

@@ -26,7 +26,7 @@ public class HomeController {
         return "index";
     }
 
-    @GetMapping("/mypage")
+    @GetMapping({"/mypage", "/profile"})
     public String mypage(
             @RequestParam(value = "user", required = false) String userKeyword,
             Model model) {
@@ -149,6 +149,11 @@ public class HomeController {
     @GetMapping("/login")
     public String login() {
         return "login";
+    }
+
+    @GetMapping("/2fa")
+    public String twoFactorPage() {
+        return "2fa";
     }
 
     @GetMapping("/findpw")

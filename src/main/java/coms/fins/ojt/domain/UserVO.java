@@ -138,6 +138,9 @@ public class UserVO {
 
     private Integer point = 1000;
 
+    @JsonProperty("mfa_enabled")
+    private Integer mfaEnabled = 0;
+
     public Date getPenaltyUntil() {
         return penaltyUntil;
     }
@@ -152,5 +155,13 @@ public class UserVO {
 
     public void setPoint(Integer point) {
         this.point = point;
+    }
+
+    public Integer getMfaEnabled() {
+        return mfaEnabled != null ? mfaEnabled : 0;
+    }
+
+    public void setMfaEnabled(Integer mfaEnabled) {
+        this.mfaEnabled = mfaEnabled;
     }
 }
