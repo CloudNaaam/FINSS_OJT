@@ -273,11 +273,15 @@ public class PointController {
         }
 
         /*
-         * 💥 [취약점 / 비즈니스 로직 결함: 금액 변조 (Amount Tampering)]
-         * PG 승인 상태는 정상 검증하였으나, 실제 지급할 포인트는 주문 원본 금액이 아닌
-         * 클라이언트 요청 Body의 "amount" 또는 "charged_point" 필드를 1순위로 신뢰하여 반영!
+         * 💥 [취약점 / 비즈니스 로직 결함: PG 결제 금액 변조 (Amount Tampering)]
+         * FINSS 서버 원본 주문 금액(payment.getAmount())과 PG사 실결제 승인 금액(pgPayment.getAmount())의
+         * 일치 여부를 대조/검증하지 않고, PG사가 승인한 금액(pgPayment.getAmount())을 그대로 신뢰하여 포인트로 지급!
+         * (공격자가 /mock-pg/pay 요청 패킷의 amount를 변조하여 결제 승인받으면 해당 금액만큼 포인트가 지급됨)
          */
-        int chargeAmount = payment.getAmount();
+        int chargeAmount = (pgPayment.getAmount() != null && pgPayment.getAmount() > 0)
+                ? pgPayment.getAmount()
+                : payment.getAmount();
+
         if (request.containsKey("amount") && request.get("amount") != null) {
             try {
                 int customAmount = Integer.parseInt(String.valueOf(request.get("amount")).trim());
