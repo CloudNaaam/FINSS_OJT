@@ -28,7 +28,7 @@ public class AdminController {
 
     /**
      * 1. 회원 정지 API (/api/admin/{userId}/penalty 및 /api/admin/penalty)
-     * [취약점/보안 요구사항: X-Forwarded-For 헤더가 192.168.21.198 인 경우에만 접근 허용]
+     * [취약점/보안 요구사항: X-Forwarded-For 헤더가 192.168.21.218 인 경우에만 접근 허용]
      * 예: /api/admin/12/penalty?until=2026-08-25 또는 POST /api/admin/penalty
      */
     @RequestMapping(value = {"/api/admin/{userId}/penalty", "/api/admin/penalty"}, method = {RequestMethod.GET, RequestMethod.POST})
@@ -43,9 +43,9 @@ public class AdminController {
 
         Map<String, Object> response = new HashMap<>();
 
-        // 🛡️ X-Forwarded-For 헤더 검증: 192.168.21.198 대역만 허용
+        // 🛡️ X-Forwarded-For 헤더 검증: 192.168.21.218 대역만 허용
         String xff = request.getHeader("X-Forwarded-For");
-        boolean isAllowedIp = (xff != null && !xff.isBlank() && xff.contains("192.168.21.198"));
+        boolean isAllowedIp = (xff != null && !xff.isBlank() && xff.contains("192.168.21.218"));
 
         if (!isAllowedIp) {
             response.put("success", false);
