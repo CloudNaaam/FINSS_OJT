@@ -39,10 +39,21 @@
         WHERE application_id = #{applicationId}
     </update>
 
+    <update id="updateApplicationFee">
+        UPDATE match_application
+        SET fee = #{fee}
+        WHERE application_id = #{applicationId}
+    </update>
+
     <insert id="insertParticipant">
         INSERT INTO match_participants (match_id, user_id, created_at)
         VALUES (#{matchId}, #{userId}, CURRENT_TIMESTAMP)
     </insert>
+
+    <delete id="deleteParticipant">
+        DELETE FROM match_participants
+        WHERE match_id = #{matchId} AND user_id = #{userId}
+    </delete>
 
     <select id="countParticipant" resultType="int">
         SELECT COUNT(*)

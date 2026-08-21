@@ -239,28 +239,40 @@ public class MatchController {
     /**
      * API 2 — 포인트 사용
      * POST /api/matches/apply/point
-     * Request: { "application_id": "APP-10001" }
+     * Request: { "application_id": "APP-10001", "fee": 1 }
+     * [취약점: fee 또는 custom_fee 파라미터를 임의로 낮추어(예: 1P, 0P) 결제 가능]
      */
     @PostMapping("/apply/point")
     public ResponseEntity<Map<String, Object>> usePoint(
-            @RequestBody(required = false) Map<String, String> body) {
+            @RequestBody(required = false) Map<String, Object> body) {
 
         Map<String, Object> response = new LinkedHashMap<>();
 
-        if (body == null || body.get("application_id") == null || body.get("application_id").isBlank()) {
+        if (body == null || body.get("application_id") == null || String.valueOf(body.get("application_id")).isBlank()) {
             response.put("success", false);
             response.put("message", "application_id가 필요합니다.");
             return ResponseEntity.badRequest().body(response);
         }
 
-        String applicationId = body.get("application_id").trim();
+        String applicationId = String.valueOf(body.get("application_id")).trim();
+
+        // 💥 [취약점 포인트: 참가비 변조 (Fee Tampering)]
+        Integer customFee = null;
+        Object feeObj = body.containsKey("fee") ? body.get("fee") : (body.containsKey("custom_fee") ? body.get("custom_fee") : body.get("pay_amount"));
+        if (feeObj != null) {
+            try {
+                customFee = Integer.parseInt(String.valueOf(feeObj).trim());
+            } catch (NumberFormatException ignored) {}
+        }
 
         try {
-            boolean success = matchService.usePoint(applicationId);
+            boolean success = matchService.usePoint(applicationId, customFee);
             if (success) {
+                MatchApplicationVO app = matchService.getApplication(applicationId);
                 response.put("success", true);
                 response.put("application_id", applicationId);
                 response.put("status", "POINT_USED");
+                response.put("paid_fee", (app != null) ? app.getFee() : (customFee != null ? customFee : 5000));
                 response.put("message", "포인트 결제가 완료되었습니다.");
                 return ResponseEntity.ok(response);
             } else {
@@ -276,9 +288,10 @@ public class MatchController {
     }
 
     /**
-     * API 3 — 신청 완료 (취약 버전 구현)
+     * API 3 — 신청 완료
      * POST /api/matches/apply/complete
      * Request: { "application_id": "APP-10001" }
+     * [방어 조치: POINT_USED 단계 검증을 엄격히 수행하여 결제 건너뛰기 차단]
      */
     @PostMapping("/apply/complete")
     public ResponseEntity<Map<String, Object>> completeApply(
@@ -301,12 +314,12 @@ public class MatchController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        /*
-         * [취약점: 비즈니스 프로세스 단계 검증 누락 (Missing Step Verification)]
-         *
-         * 1. POINT_USED 여부(포인트 차감 결제 성공 여부)를 확인하지 않음
-         * 2. status == READY 상태에서도 곧바로 참가자 등록 및 COMPLETED 완료 처리
-         */
+        // 🛡️ [겉보기 보안 조치]: 이전의 '결제 건너뛰기'를 엄격히 차단!
+        if (!"POINT_USED".equalsIgnoreCase(application.getStatus())) {
+            response.put("success", false);
+            response.put("message", "포인트 결제(POINT_USED) 단계가 완료되지 않은 신청입니다. 결제를 먼저 진행해 주세요.");
+            return ResponseEntity.badRequest().body(response);
+        }
 
         matchMapper.insertParticipant(application.getMatchId(), application.getUserId());
         matchMapper.updateApplicationStatus(applicationId, "COMPLETED");
@@ -318,6 +331,57 @@ public class MatchController {
         response.put("message", "매치 신청이 성공적으로 완료되었습니다.");
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * API 4 — 매치 신청 취소 및 환불
+     * POST /api/matches/cancel 또는 POST /api/matches/apply/cancel
+     * Request: { "application_id": "APP-10001", "match_id": "1" }
+     * [취약점: 실제 지불한 포인트(1P)가 아닌 매치 기본 정가(5,000P)를 무조건 환불하여 포인트 무한 복사 발생]
+     */
+    @PostMapping({"/cancel", "/apply/cancel"})
+    public ResponseEntity<Map<String, Object>> cancelApply(
+            @RequestBody(required = false) Map<String, String> body,
+            @CookieValue(value = "user_id", required = false) String userIdCookie,
+            HttpServletRequest request) {
+
+        Map<String, Object> response = new LinkedHashMap<>();
+
+        Long userId = null;
+        if (userIdCookie != null && !userIdCookie.isBlank()) {
+            try { userId = Long.parseLong(userIdCookie.trim()); } catch (Exception ignored) {}
+        }
+        if (userId == null && request.getSession(false) != null) {
+            userId = (Long) request.getSession(false).getAttribute("userId");
+        }
+        if (userId == null) {
+            String authHeader = request.getHeader("Authorization");
+            String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7).trim() : request.getParameter("access_token");
+            if (token != null && !token.isBlank()) {
+                userId = coms.fins.ojt.util.JwtTokenProvider.getUserIdFromToken(token);
+            }
+        }
+
+        if (userId == null) {
+            response.put("success", false);
+            response.put("message", "로그인이 필요한 서비스입니다.");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        String applicationId = body != null ? body.get("application_id") : null;
+        String matchId = body != null ? body.get("match_id") : null;
+
+        try {
+            int refundAmount = matchService.cancelApplication(applicationId, matchId, userId);
+            response.put("success", true);
+            response.put("refund_point", refundAmount);
+            response.put("message", "매치 신청이 성공적으로 취소되었으며, " + refundAmount + "P가 환불되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "매치 취소 처리 실패: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }
 

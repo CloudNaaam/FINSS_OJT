@@ -172,9 +172,10 @@ public class MatchService {
 
     /**
      * API 2 — 포인트 사용
+     * [취약점/비즈니스 결함: customFee 가 요청 파라미터로 전달되면 해당 금액(예: 1P, 0P)으로 참가비를 변조하여 차감]
      */
     @Transactional
-    public boolean usePoint(String applicationId) {
+    public boolean usePoint(String applicationId, Integer customFee) {
         if (matchMapper == null || userMapper == null || applicationId == null) {
             return false;
         }
@@ -193,20 +194,93 @@ public class MatchService {
             throw new IllegalArgumentException("사용자 정보를 찾을 수 없습니다.");
         }
 
+        // 💥 [금액 변조 결함]: 요청 파라미터로 customFee(예: 1, 0)가 전달되면 이를 차감 금액으로 신뢰!
+        int payFee = app.getFee();
+        if (customFee != null && customFee >= 0) {
+            payFee = customFee;
+            matchMapper.updateApplicationFee(applicationId.trim(), payFee);
+            app.setFee(payFee);
+        }
+
         int currentPoint = (user.getPoint() != null) ? user.getPoint() : 0;
-        if (currentPoint < app.getFee()) {
-            throw new IllegalStateException("보유 포인트가 부족합니다. (보유: " + currentPoint + "P, 필요: " + app.getFee() + "P)");
+        if (currentPoint < payFee) {
+            throw new IllegalStateException("보유 포인트가 부족합니다. (보유: " + currentPoint + "P, 필요: " + payFee + "P)");
         }
 
         // 포인트 차감
-        userMapper.updateUserPoint(user.getUserId(), currentPoint - app.getFee());
+        userMapper.updateUserPoint(user.getUserId(), currentPoint - payFee);
 
         // 상태 POINT_USED로 변경
         matchMapper.updateApplicationStatus(applicationId.trim(), "POINT_USED");
 
         logger.info("매치 신청 포인트 차감 완료: applicationId={}, userId={}, fee={}, remainingPoint={}",
-                applicationId, user.getUserId(), app.getFee(), currentPoint - app.getFee());
+                applicationId, user.getUserId(), payFee, currentPoint - payFee);
         return true;
+    }
+
+    @Transactional
+    public boolean usePoint(String applicationId) {
+        return usePoint(applicationId, null);
+    }
+
+    /**
+     * 매치 신청 취소 및 환불 처리 API
+     * [취약점 포인트: 실제 결제한 금액(app.getFee())이 아닌 매치 기본 정가(match.getFee() = 5,000P)를 환불하여 포인트 무한 복사]
+     */
+    @Transactional
+    public int cancelApplication(String applicationId, String matchId, Long userId) {
+        if (matchMapper == null || userMapper == null || userId == null) {
+            throw new IllegalArgumentException("필수 파라미터가 누락되었습니다.");
+        }
+
+        String targetMatchId = matchId;
+        MatchApplicationVO app = null;
+        if (applicationId != null && !applicationId.isBlank()) {
+            app = matchMapper.selectApplication(applicationId.trim());
+            if (app != null) {
+                targetMatchId = app.getMatchId();
+                if (!userId.equals(app.getUserId())) {
+                    throw new SecurityException("본인의 신청 내역만 취소할 수 있습니다.");
+                }
+            }
+        }
+
+        if (targetMatchId == null || targetMatchId.isBlank()) {
+            throw new IllegalArgumentException("취소할 매치 ID가 유효하지 않습니다.");
+        }
+
+        // 참가 여부 확인
+        boolean isApplied = matchMapper.countParticipant(targetMatchId.trim(), userId) > 0;
+        if (!isApplied && app == null) {
+            throw new IllegalStateException("신청 또는 참가 중인 매치가 아닙니다.");
+        }
+
+        // 1. 참가자 테이블에서 삭제
+        matchMapper.deleteParticipant(targetMatchId.trim(), userId);
+        if (app != null) {
+            matchMapper.updateApplicationStatus(app.getApplicationId(), "CANCELLED");
+        }
+
+        // 2. 💥 [환불 결함 / 포인트 복사]:
+        // 유저가 실제로 낸 금액(1P 등)을 확인하지 않고, 무조건 매치 기본 정가(기본 5,000P)를 계정에 환불 적립!
+        int refundAmount = 5000;
+        try {
+            MatchVO match = matchMapper.selectMatchById(targetMatchId.trim());
+            if (match != null && match.getPricePerHour() != null && match.getPricePerHour() > 0) {
+                refundAmount = match.getPricePerHour();
+            }
+        } catch (Exception ignored) {}
+
+        UserVO user = userMapper.selectUserById(userId);
+        if (user != null) {
+            int currentPoint = (user.getPoint() != null) ? user.getPoint() : 0;
+            int newPoint = currentPoint + refundAmount;
+            userMapper.updateUserPoint(userId, newPoint);
+            logger.info("매치 취소 및 포인트 환불 완료 (정가 환불 결함): userId={}, matchId={}, refundAmount={}, totalPoint={}",
+                    userId, targetMatchId, refundAmount, newPoint);
+        }
+
+        return refundAmount;
     }
 
     public MatchApplicationVO getApplication(String applicationId) {

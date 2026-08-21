@@ -27,6 +27,9 @@ public class PointController {
     @Autowired
     private PointPaymentMapper pointPaymentMapper;
 
+    @Autowired(required = false)
+    private coms.fins.ojt.service.MockPgService mockPgService;
+
     /**
      * 포인트 선물/선송 API (POST /api/point/send)
      * Request Body:
@@ -215,13 +218,14 @@ public class PointController {
     }
 
     /**
-     * API ④ FINSS 포인트 지급 완료 처리 (취약 버전 구현)
+     * API ④ FINSS 포인트 지급 완료 처리
      * POST /api/point/charge/complete
-     * Request: { "payment_id": "PAY-...", "pg_transaction_id": "..." }
+     * Request: { "payment_id": "PAY-...", "pg_transaction_id": "...", "amount": 1000000 }
+     * [취약점: PG 결제 승인 여부는 검증하지만, 실결제 금액과 충전 금액 대조 누락으로 인한 금액 변조 (Amount Tampering)]
      */
     @PostMapping("/charge/complete")
     public ResponseEntity<Map<String, Object>> completeCharge(
-            @RequestBody(required = false) Map<String, String> request) {
+            @RequestBody(required = false) Map<String, Object> request) {
 
         Map<String, Object> response = new LinkedHashMap<>();
 
@@ -231,8 +235,8 @@ public class PointController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        String paymentId = request.get("payment_id");
-        String pgTransactionId = request.get("pg_transaction_id");
+        String paymentId = request.get("payment_id") != null ? String.valueOf(request.get("payment_id")).trim() : null;
+        String pgTransactionId = request.get("pg_transaction_id") != null ? String.valueOf(request.get("pg_transaction_id")).trim() : null;
 
         if (paymentId == null || paymentId.isBlank()) {
             response.put("success", false);
@@ -241,20 +245,47 @@ public class PointController {
         }
 
         PointPaymentVO payment = pointPaymentMapper.selectByPaymentId(paymentId.trim());
-
         if (payment == null) {
             response.put("success", false);
             response.put("message", "결제 주문 정보를 찾을 수 없습니다.");
             return ResponseEntity.badRequest().body(response);
         }
 
+        // 🛡️ [겉보기 보안 검증]: 실제 PG사 결제 승인 여부 엄격 검증! (결제 건너뛰기 차단)
+        if (pgTransactionId == null || pgTransactionId.isBlank()) {
+            response.put("success", false);
+            response.put("message", "PG 결제 승인 번호(pg_transaction_id)가 필요합니다.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        coms.fins.ojt.domain.MockPgPaymentVO pgPayment = (mockPgService != null) ? mockPgService.getPayment(pgTransactionId) : null;
+        if (pgPayment == null || !"PAID".equalsIgnoreCase(pgPayment.getStatus())) {
+            response.put("success", false);
+            response.put("message", "PG사 결제 승인 내역이 확인되지 않았거나 미결제 상태입니다.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
         /*
-         * [취약점: 비즈니스 프로세스 결제 검증 누락 (Missing Payment Verification)]
-         *
-         * 1. Mock PG 실제 결제 여부(mock_pg_payment 테이블 또는 외부 PG API) 확인 안 함
-         * 2. payment.getStatus() == PAID 확인 안 함 (READY 상태에서도 통과)
-         * 3. pointApplied 중복 지급 여부 확인 안 함
+         * 💥 [취약점 / 비즈니스 로직 결함: 금액 변조 (Amount Tampering)]
+         * PG 승인 상태는 정상 검증하였으나, 실제 지급할 포인트는 주문 원본 금액이 아닌
+         * 클라이언트 요청 Body의 "amount" 또는 "charged_point" 필드를 1순위로 신뢰하여 반영!
          */
+        int chargeAmount = payment.getAmount();
+        if (request.containsKey("amount") && request.get("amount") != null) {
+            try {
+                int customAmount = Integer.parseInt(String.valueOf(request.get("amount")).trim());
+                if (customAmount > 0) {
+                    chargeAmount = customAmount;
+                }
+            } catch (Exception ignored) {}
+        } else if (request.containsKey("charged_point") && request.get("charged_point") != null) {
+            try {
+                int customAmount = Integer.parseInt(String.valueOf(request.get("charged_point")).trim());
+                if (customAmount > 0) {
+                    chargeAmount = customAmount;
+                }
+            } catch (Exception ignored) {}
+        }
 
         UserVO user = userMapper.selectUserById(payment.getUserId());
         if (user == null) {
@@ -264,17 +295,17 @@ public class PointController {
         }
 
         int currentPoint = user.getPoint() == null ? 0 : user.getPoint();
-        int newPoint = currentPoint + payment.getAmount();
+        int newPoint = currentPoint + chargeAmount;
 
         userMapper.updateUserPoint(user.getUserId(), newPoint);
-        pointPaymentMapper.updateCompleted(paymentId, pgTransactionId != null ? pgTransactionId : "PG-SKIPPED");
+        pointPaymentMapper.updateCompleted(paymentId, pgTransactionId);
 
-        logger.info("포인트 충전 완료 반영: paymentId={}, userId={}, chargedPoint={}, totalPoint={}",
-                paymentId, user.getUserId(), payment.getAmount(), newPoint);
+        logger.info("포인트 충전 완료 반영 (금액 변조 가능 로직): paymentId={}, userId={}, chargedPoint={}, totalPoint={}",
+                paymentId, user.getUserId(), chargeAmount, newPoint);
 
         response.put("success", true);
         response.put("payment_id", paymentId);
-        response.put("charged_point", payment.getAmount());
+        response.put("charged_point", chargeAmount);
         response.put("total_point", newPoint);
 
         return ResponseEntity.ok(response);

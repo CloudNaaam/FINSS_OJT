@@ -22,7 +22,9 @@ public interface MatchMapper {
     int insertApplication(MatchApplicationVO vo);
     MatchApplicationVO selectApplication(@Param("applicationId") String applicationId);
     int updateApplicationStatus(@Param("applicationId") String applicationId, @Param("status") String status);
+    int updateApplicationFee(@Param("applicationId") String applicationId, @Param("fee") Integer fee);
     int insertParticipant(@Param("matchId") String matchId, @Param("userId") Long userId);
+    int deleteParticipant(@Param("matchId") String matchId, @Param("userId") Long userId);
     int countParticipant(@Param("matchId") String matchId, @Param("userId") Long userId);
     List<MatchVO> selectMyAppliedMatches(@Param("userId") Long userId);
 }
