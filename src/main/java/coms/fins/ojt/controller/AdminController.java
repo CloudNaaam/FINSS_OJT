@@ -49,7 +49,7 @@ public class AdminController {
 
         if (!isAllowedIp) {
             response.put("success", false);
-            response.put("message", "접근 권한이 없습니다. 관리자 허용 IP(192.168.21.198)에서만 접근 가능합니다.");
+            response.put("message", "접근 권한이 없습니다. 관리자 허용 IP에서만 접근 가능합니다.");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
 

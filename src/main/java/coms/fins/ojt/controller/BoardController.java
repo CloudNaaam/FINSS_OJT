@@ -113,10 +113,10 @@ public class BoardController {
     }
 
     /**
-     * 게시글 삭제 API (DELETE /api/board/delete, DELETE /api/board/{boardId})
+     * 게시글 삭제 API (POST/DELETE /api/board/delete, POST/DELETE /api/board/{boardId})
      * [취약점/요구사항: admin=true 파라미터 전달 시 작성자 검증을 건너뛰고 강제 삭제 가능]
      */
-    @DeleteMapping({"/api/board/delete", "/api/board/{boardId}", "/board/{boardId}"})
+    @RequestMapping(value = {"/api/board/delete", "/api/board/{boardId}", "/board/{boardId}"}, method = {RequestMethod.POST, RequestMethod.DELETE})
     @ResponseBody
     public ResponseEntity<Map<String, Boolean>> deleteBoard(
             @PathVariable(value = "boardId", required = false) Long pathBoardId,

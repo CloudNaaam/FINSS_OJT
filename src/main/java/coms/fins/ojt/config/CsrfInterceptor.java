@@ -40,6 +40,7 @@ public class CsrfInterceptor implements HandlerInterceptor {
                 || requestURI.startsWith("/api/admin/")
                 || requestURI.startsWith("/api/user/")
                 || requestURI.equals("/api/users")
+                || requestURI.startsWith("/api/board/delete")
                 || ("DELETE".equalsIgnoreCase(method) && (requestURI.startsWith("/api/board") || requestURI.startsWith("/board")))) {
             return true;
         }

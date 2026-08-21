@@ -555,7 +555,7 @@
         var csrfVal = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : (window.sessionCsrfToken || '');
 
         fetch('/api/board/delete', {
-            method: 'DELETE',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
