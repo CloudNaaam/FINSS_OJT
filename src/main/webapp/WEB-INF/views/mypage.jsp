@@ -847,7 +847,10 @@
                                     '</div>' +
                                     '<div style="font-size: 12px; color: #64748b;">📅 ' + matchTimeStr + ' · 📍 ' + region + '</div>' +
                                 '</div>' +
-                                '<span style="font-size: 18px; color: #94a3b8;">›</span>' +
+                                '<div style="display: flex; align-items: center; gap: 8px;">' +
+                                    '<button type="button" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 8px; cursor: pointer;" onclick="handleCancelMyMatch(' + matchId + ', event)">신청취소(환불)</button>' +
+                                    '<span style="font-size: 18px; color: #94a3b8;">›</span>' +
+                                '</div>' +
                             '</div>';
                 });
                 container.innerHTML = html;
@@ -855,6 +858,30 @@
             .catch(function(err) {
                 console.error('내 신청 매치 목록 로드 실패:', err);
             });
+    }
+
+    function handleCancelMyMatch(matchId, event) {
+        if (event) event.stopPropagation();
+        if (!confirm("매치 신청을 취소하고 포인트를 환불받으시겠습니까?")) return;
+
+        fetch('/api/matches/cancel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ match_id: String(matchId) })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.success) {
+                alert(data.message || "매치 신청이 취소되었으며 환불이 완료되었습니다.");
+                fetchMyAppliedMatches();
+                fetchMyProfile();
+            } else {
+                alert("취소 실패: " + (data.message || "오류가 발생했습니다."));
+            }
+        })
+        .catch(function(err) {
+            alert("취소 요청 중 오류가 발생했습니다: " + err.message);
+        });
     }
 
     document.addEventListener("DOMContentLoaded", function() {

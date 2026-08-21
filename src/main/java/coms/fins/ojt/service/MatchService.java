@@ -185,8 +185,13 @@ public class MatchService {
             throw new IllegalArgumentException("해당 신청 정보를 찾을 수 없습니다.");
         }
 
+        // 🛡️ [중복 결제 방어 검증]
+        if ("POINT_USED".equalsIgnoreCase(app.getStatus()) || "COMPLETED".equalsIgnoreCase(app.getStatus())) {
+            throw new IllegalStateException("중복 결제 에러!! 이미 포인트 결제가 완료된 신청 건입니다.");
+        }
+
         if (!"READY".equalsIgnoreCase(app.getStatus())) {
-            throw new IllegalStateException("이미 포인트 결제가 처리되었거나 유효하지 않은 상태입니다. (현재 상태: " + app.getStatus() + ")");
+            throw new IllegalStateException("유효하지 않은 신청 상태입니다. (현재 상태: " + app.getStatus() + ")");
         }
 
         UserVO user = userMapper.selectUserById(app.getUserId());

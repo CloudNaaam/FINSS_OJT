@@ -611,9 +611,10 @@
                 if (data.is_applied) {
                     var badge = document.getElementById("appliedNoticeBadge");
                     if (badge) badge.style.display = "flex";
-                    applyButton.textContent = "✅ 신청 완료 (참가 중)";
-                    applyButton.disabled = true;
-                    applyButton.style.background = "#10b981";
+                    applyButton.textContent = "❌ 매치 신청 취소 (환불받기)";
+                    applyButton.disabled = false;
+                    applyButton.style.background = "#e11d48";
+                    applyButton.onclick = handleCancelApply;
                 }
             })
             .catch(function(err) {
@@ -775,10 +776,32 @@
     // 3단계: 확인 클릭 시 모달 닫기 및 버튼 상태 갱신
     function handleFinishApply() {
         closeApplyModal();
-        applyButton.textContent = "신청 완료";
-        applyButton.disabled = true;
-        applyButton.style.background = "#bdc6d2";
+        applyButton.textContent = "❌ 매치 신청 취소 (환불받기)";
+        applyButton.disabled = false;
+        applyButton.style.background = "#e11d48";
+        applyButton.onclick = handleCancelApply;
         showToast("매치 신청이 성공적으로 완료되었습니다!");
+    }
+
+    function handleCancelApply() {
+        if (!confirm("매치 신청을 취소하고 참가비를 환불받으시겠습니까?")) return;
+        fetch('/api/matches/cancel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ match_id: matchId })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.success) {
+                alert(data.message || "매치 신청이 취소되었으며 포인트가 환불되었습니다.");
+                location.reload();
+            } else {
+                alert("매치 취소 실패: " + (data.message || "오류가 발생했습니다."));
+            }
+        })
+        .catch(function(err) {
+            alert("취소 요청 중 오류가 발생했습니다: " + err.message);
+        });
     }
 
     document.addEventListener("DOMContentLoaded", fetchMatchDetail);

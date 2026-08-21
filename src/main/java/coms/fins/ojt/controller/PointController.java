@@ -251,6 +251,13 @@ public class PointController {
             return ResponseEntity.badRequest().body(response);
         }
 
+        // 🛡️ [중복 결제 방어 검증]: 이미 포인트가 지급 완료된 건인지 검증
+        if ("COMPLETED".equalsIgnoreCase(payment.getStatus()) || payment.getPointApplied() == 1) {
+            response.put("success", false);
+            response.put("message", "중복 결제 에러!! 이미 포인트 지급이 완료된 결제 건입니다.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
         // 🛡️ [겉보기 보안 검증]: 실제 PG사 결제 승인 여부 엄격 검증! (결제 건너뛰기 차단)
         if (pgTransactionId == null || pgTransactionId.isBlank()) {
             response.put("success", false);

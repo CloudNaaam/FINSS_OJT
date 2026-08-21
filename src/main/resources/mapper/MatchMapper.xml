@@ -6,7 +6,7 @@
 <mapper namespace="coms.fins.ojt.mapper.MatchMapper">
 
     <select id="selectAllMatches" resultType="coms.fins.ojt.domain.MatchVO">
-        SELECT match_id AS matchId, field_name AS fieldName, highlight_video AS highlightVideo, match_at AS matchAt, created_at AS createdAt, match_level AS matchLevel, gender, num_members AS numMembers, status FROM matches ORDER BY match_id DESC
+        SELECT match_id AS matchId, field_name AS fieldName, highlight_video AS highlightVideo, match_at AS matchAt, created_at AS createdAt, match_level AS matchLevel, gender, num_members AS numMembers FROM matches ORDER BY match_id DESC
     </select>
 
     <select id="selectMatchesWithFilter" resultType="coms.fins.ojt.domain.MatchVO">
